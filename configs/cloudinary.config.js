@@ -36,6 +36,31 @@ const uploadSpacePic = (file, folderName) => {
   });
 };
 
+const uploadPic = (file, folderName) => {
+  return new Promise((resolve, reject) => {
+    // Validate file type
+    if (!allowedTypes.includes(file.mimetype)) {
+      return reject(
+        new Error("Invalid file type. Only JPEG, PNG, and GIF are allowed.")
+      );
+    }
+
+    // Create upload stream
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: folderName },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      }
+    );
+
+    streamifier.createReadStream(file.buffer).pipe(uploadStream);
+  });
+};
+
 const removeFromCloudinary = (publicId) => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.destroy(publicId, (error, result) => {
@@ -48,4 +73,9 @@ const removeFromCloudinary = (publicId) => {
   });
 };
 
-module.exports = { cloudinary, uploadSpacePic, removeFromCloudinary };
+module.exports = {
+  cloudinary,
+  uploadSpacePic,
+  removeFromCloudinary,
+  uploadPic,
+};

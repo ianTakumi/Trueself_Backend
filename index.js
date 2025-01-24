@@ -11,6 +11,7 @@ const entryRoutes = require("./routes/entry.routes");
 const spaceRoutes = require("./routes/space.routes");
 const postRoutes = require("./routes/post.routes");
 const authRoutes = require("./routes/auth.routes");
+const moodEntryRoutes = require("./routes/moodEntry.routes");
 
 // Initializing express
 const app = express();
@@ -26,6 +27,7 @@ app.use("/api/v1/entries", entryRoutes);
 app.use("/api/v1/spaces", spaceRoutes);
 app.use("/api/v1/posts", postRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/moodEntries", moodEntryRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URL)

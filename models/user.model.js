@@ -11,26 +11,23 @@ const UserSchema = new Schema(
       type: String,
       trim: true,
     },
-    fname: {
+    name: {
       type: String,
-      required: "First Name is required!",
-      trim: true,
-    },
-    lname: {
-      type: String,
-      required: "Last Name is required!",
+      required: [true, "Please enter your name"],
       trim: true,
     },
     dob: {
       type: Date,
+      required: [true, "Please enter your date of birth"],
     },
     email: {
       type: String,
-      required: "Email is required!",
+      required: [true, "Email is required!"],
       unique: true,
     },
     phoneNumber: {
       type: String,
+      required: [true, "Phone number is required!"],
     },
     profile: {
       public_id: {
@@ -48,8 +45,8 @@ const UserSchema = new Schema(
     role: {
       type: String,
       required: [true, "Role is required"],
-      default: "customer",
-      enum: ["customer", "serviceCrew", "admin"],
+      default: "user",
+      enum: ["user", "admin"],
     },
     status: {
       type: String,
