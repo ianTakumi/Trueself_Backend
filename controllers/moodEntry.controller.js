@@ -62,6 +62,19 @@ exports.updateMoodEntry = async (req, res) => {
       { mood, note },
       { new: true }
     );
+
+    if (!updatedMoodEntry) {
+      return res.status(404).json({
+        success: false,
+        message: "Mood entry not found",
+      });
+    }
+
+    res.status(200).json({
+      moodEntry: updatedMoodEntry,
+      success: true,
+      message: "Successfully updated the mood entry",
+    });
   } catch (error) {
     res.status(500).json({ message: error.message, success: false });
   }
@@ -71,7 +84,7 @@ exports.updateMoodEntry = async (req, res) => {
 exports.deleteMoodEntry = async (req, res) => {
   try {
     const { moodEntryId, userId } = req.params;
-
+    console.log(req.params);
     const moodEntry = await MoodEntry.findById(moodEntryId);
 
     if (!moodEntry) {
@@ -81,14 +94,14 @@ exports.deleteMoodEntry = async (req, res) => {
       });
     }
 
-    if (moodEntry.userId.toString() !== userId) {
+    if (moodEntry.user.toString() !== userId.toString()) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to delete this entry",
       });
     }
 
-    await moodEntry.remove();
+    await moodEntry.deleteOne();
 
     res.status(200).json({
       success: true,
