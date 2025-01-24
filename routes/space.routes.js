@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const spaceController = require("../controllers/space.controller");
+const upload = require("../middlewares/multer.middleware");
 
 // Get all spaces
 router.get("/", spaceController.getSpaces);
@@ -9,7 +10,7 @@ router.get("/", spaceController.getSpaces);
 router.post("/", spaceController.createSpace);
 
 // Update space
-router.put("/:id", spaceController.updateSpace);
+router.put("/:spaceId", spaceController.updateSpace);
 
 // Delete space
 router.delete("/:spaceId", spaceController.deleteSpace);
