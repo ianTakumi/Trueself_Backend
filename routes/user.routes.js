@@ -8,6 +8,9 @@ router.get("/", userController.getAllUsers);
 // Get single user
 router.get("/:userId", userController.getUser);
 
+// Join space
+router.post("/space/:userId", userController.joinSpace);
+
 // Update profile
 router.put("/:userId", userController.updateProfile);
 

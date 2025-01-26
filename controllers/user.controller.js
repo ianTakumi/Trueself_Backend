@@ -35,6 +35,26 @@ exports.getUser = async (req, res) => {
   }
 };
 
+// User join space
+exports.joinSpace = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { spaceId } = req.body;
+    const user = await User.findById(userId);
+    user.spaces.push(spaceId);
+    await user.save();
+
+    res.status(200).json({
+      message: "Sucessfully join space",
+      success: true,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
 // Update profile
 exports.updateProfile = async (req, res) => {
   try {

@@ -18,7 +18,7 @@ exports.getPostBasedOnUserID = async (req, res) => {
 exports.createPost = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { title, content } = req.body;
+    const { title, type } = req.body;
   } catch (error) {
     res.status(500).json({ message: error.message, success: false });
   }
@@ -38,6 +38,15 @@ exports.updatePost = async (req, res) => {
 exports.deletePost = async (req, res) => {
   try {
     const { postId } = req.params;
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res
+        .status(404)
+        .json({ message: "Post not found", success: false });
+    }
+
+    if (post.type === "video") {
+    }
   } catch (error) {
     res.status(500).json({ message: error.message, success: false });
   }

@@ -29,6 +29,69 @@ const UserSchema = new Schema(
       type: String,
       required: [true, "Phone number is required!"],
     },
+    sexualOrientation: {
+      type: String,
+      required: [true, "Please enter your sexual orientation"],
+      enum: [
+        "Lesbian",
+        "Gay",
+        "Bisexual",
+        "Pansexual",
+        "Asexual",
+        "Aromantic",
+        "Demisexual",
+        "Demiromantic",
+        "Heterosexual",
+        "Homosexual",
+        "Queer",
+        "Questioning",
+        "Polysexual",
+        "Androsexual",
+        "Gynosexual",
+        "Skoliosexual",
+        "Omnisexual",
+        "Graysexual",
+        "Grayromantic",
+        "Allosexual",
+      ],
+    },
+    genderIdentity: {
+      type: String,
+      required: [true, "Please enter your gender identity"],
+      enum: [
+        "Cisgender",
+        "Transgender",
+        "Nonbinary",
+        "Genderqueer",
+        "Agender",
+        "Bigender",
+        "Demiboy",
+        "Demigirl",
+        "Two-spirit",
+        "Androgynous",
+        "Pangender",
+        "Xenogender",
+        "Questioning",
+        "Third Gender",
+        "Intersex",
+      ],
+    },
+    pronouns: {
+      type: String,
+      required: [true, "Please enter your pronouns"],
+      enum: [
+        "He/Him/His",
+        "She/Her/Hers",
+        "They/Them/Theirs",
+        "Ze/Zir/Zirs",
+        "Xe/Xem/Xyrs",
+        "Ve/Vir/Vis",
+        "E/Em/Eirs",
+        "Ey/Em/Eir (Spivak Pronouns)",
+        "Other",
+        "Prefer not to say",
+      ],
+    },
     profile: {
       public_id: {
         type: String,
@@ -48,6 +111,12 @@ const UserSchema = new Schema(
       default: "user",
       enum: ["user", "admin"],
     },
+    spaces: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Space",
+      },
+    ],
     status: {
       type: String,
       required: [true, "Status is required"],
@@ -60,6 +129,10 @@ const UserSchema = new Schema(
     token: {
       type: String,
       default: null, // You can set a default value if needed
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
     },
   },
   {
@@ -77,7 +150,7 @@ UserSchema.pre("save", async function (next) {
 
   try {
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(ussocialer.password, salt);
+    user.password = await bcrypt.hash(user.password, salt);
     next();
   } catch (err) {
     next(err);
