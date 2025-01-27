@@ -1,4 +1,7 @@
 const User = require("../models/user.model");
+const upload = require("../middlewares/multer.middleware");
+const path = require("path");
+const { sendAdminEmail } = require("../configs/nodemailer.config");
 
 // Get all users
 exports.getAllUsers = async (req, res) => {
@@ -8,6 +11,24 @@ exports.getAllUsers = async (req, res) => {
       message: "Sucessfully get all users",
       success: true,
       data: users,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
+
+// Get user count
+exports.getUserCount = async (req, res) => {
+  try {
+    // Count users excluding those with the 'admin' role
+    const count = await User.countDocuments({ role: { $ne: "admin" } });
+    res.status(200).json({
+      message: "Successfully retrieved user count excluding admins",
+      success: true,
+      count,
     });
   } catch (error) {
     res.status(500).json({
@@ -55,6 +76,63 @@ exports.joinSpace = async (req, res) => {
     });
   }
 };
+
+// User leave space
+exports.leaveSpace = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { spaceId } = req.body;
+    const user = await User.findById(userId);
+    user.spaces = user.spaces.filter((space) => space !== spaceId);
+    await user.save();
+
+    res.status(200).json({
+      message: "Sucessfully leave space",
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
+
+exports.sendEmail = [
+  upload.array("attachments"),
+  async (req, res) => {
+    try {
+      const { to, subject, message } = req.body;
+
+      if (!to || !subject || !message) {
+        return res.status(400).json({
+          message: "Please provide all fields",
+          success: false,
+        });
+      }
+
+      // Prepare attachments with correct path handling
+      const attachments = req.files.map((file) => ({
+        filename: file.originalname,
+        content: file.buffer, // Use the file buffer directly
+        contentType: file.mimetype, // Set the content type
+      }));
+
+      // Send the email
+      await sendAdminEmail(to, subject, message, attachments);
+
+      res.status(200).send({ message: "Email sent successfully" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({
+        message: "Internal server error",
+        success: false,
+      });
+    }
+  },
+];
+
 // Update profile
 exports.updateProfile = async (req, res) => {
   try {

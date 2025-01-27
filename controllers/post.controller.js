@@ -18,7 +18,68 @@ exports.getPostBasedOnUserID = async (req, res) => {
 exports.createPost = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { title, type } = req.body;
+    const { title, type, editorData, video, images, pollOptions, linkUrl } =
+      req.body;
+
+    if (!title || !type) {
+      return res
+        .status(400)
+        .json({ message: "Please fill in all fields", success: false });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
+// Like a post
+exports.likePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res
+        .status(404)
+        .json({ message: "Post not found", success: false });
+    }
+
+    post.likes.push(req.user._id);
+    await post.save();
+
+    res.status(200).json({
+      message: "Successfully liked post",
+      success: true,
+      data: post,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
+// Dislike a post
+exports.dislikePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res
+        .status(404)
+        .json({ message: "Post not found", success: false });
+    }
+
+    const index = post.likes.indexOf(req.user._id);
+    if (index > -1) {
+      post.likes.splice(index, 1);
+    }
+
+    await post.save();
+
+    res.status(200).json({
+      message: "Successfully disliked post",
+      success: true,
+      data: post,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message, success: false });
   }

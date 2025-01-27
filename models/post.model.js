@@ -63,6 +63,18 @@ const PostSchema = new Schema(
         return this.type === "link";
       },
     },
+    likes: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    dislikes: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { collection: "posts", timestamps: true }
 );

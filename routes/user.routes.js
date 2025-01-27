@@ -5,6 +5,12 @@ const router = express.Router();
 // Get all users
 router.get("/", userController.getAllUsers);
 
+// Get user count
+router.get("/count", userController.getUserCount);
+
+// Admin send email
+router.post("/adminSendEmail", userController.sendEmail);
+
 // Get single user
 router.get("/:userId", userController.getUser);
 

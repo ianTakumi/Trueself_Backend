@@ -6,6 +6,12 @@ const upload = require("../middlewares/multer.middleware");
 // Get all spaces
 router.get("/", spaceController.getSpaces);
 
+// Get space count
+router.get("/count", spaceController.getSpaceCount);
+
+// Get space by id
+router.get("/:spaceId", spaceController.getSpaceById);
+
 // Create space
 router.post("/", spaceController.createSpace);
 

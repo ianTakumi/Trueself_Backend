@@ -112,6 +112,84 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+// Change password
+exports.changePassword = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res
+        .status(400)
+        .json({ message: "Please fill all fields", success: false });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "User not found", success: false });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ message: "Invalid current password", success: false });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res
+        .status(400)
+        .json({ message: "Passwords do not match", success: false });
+    }
+
+    user.password = newPassword;
+    await user.save();
+    res.status(200).json({ message: "Password updated", success: true });
+  } catch (error) {
+    return res.status(500).json({ message: error, success: false });
+  }
+};
+
+// Google link account
+exports.linkGoogle = async (req, res) => {
+  try {
+    const { provider_id, user_id } = req.body;
+
+    if (!provider_id || !user_id) {
+      return res
+        .status(400)
+        .json({ error: "Provider ID and User ID are required" });
+    }
+
+    const user = await User.findById(user_id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const existingSocialAccount = user.socialAccounts.find(
+      (account) => account.provider === "google"
+    );
+
+    if (existingSocialAccount) {
+      return res
+        .status(400)
+        .json({ error: "Google account is already linked" });
+    }
+
+    user.socialAccounts.push({ provider: "google", provider_id });
+    await user.save();
+    return res.status(200).json({
+      message: "Google account linked successfully",
+      user,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error, success: false });
+  }
+};
 // Google login
 exports.googleLogin = async (req, res) => {
   try {

@@ -19,6 +19,42 @@ exports.getSpaces = async (req, res) => {
   }
 };
 
+// Get space count
+exports.getSpaceCount = async (req, res) => {
+  try {
+    const count = await Space.countDocuments();
+
+    res.json({
+      message: "Successfully fetch space count",
+      success: true,
+      count,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
+// Get space by id
+exports.getSpaceById = async (req, res) => {
+  try {
+    const { spaceId } = req.params;
+    const space = await Space.findById(spaceId);
+    if (!space) {
+      return res.status(404).json({
+        message: "Space not found",
+        success: false,
+      });
+    }
+    res.json({
+      message: "Successfully fetch space",
+      success: true,
+      data: space,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 exports.createSpace = [
   upload.single("image"),
   async (req, res) => {
