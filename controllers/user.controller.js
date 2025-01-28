@@ -3,6 +3,32 @@ const upload = require("../middlewares/multer.middleware");
 const path = require("path");
 const { sendAdminEmail } = require("../configs/nodemailer.config");
 
+// Check uniqueness
+exports.checkUnique = async (req, res) => {
+  try {
+    const { email, id } = req.body; // Destructure id from the request body
+
+    // Build the query: Check for email existence, excluding the user with the provided id
+    const query = id ? { email, _id: { $ne: id } } : { email };
+
+    const existingUser = await User.findOne(query);
+
+    if (existingUser) {
+      console.log("Email is already taken");
+      return res
+        .status(400)
+        .json({ message: "Email is already taken", isUnique: false });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "Email is available", isUnique: true });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Get all users
 exports.getAllUsers = async (req, res) => {
   try {
@@ -139,6 +165,32 @@ exports.updateProfile = async (req, res) => {
     const { userId } = req.params;
     const { name, email, dob } = req.body;
   } catch (error) {
+    res.status(500).json({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
+
+exports.updateAdminProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { name, email, dob, phoneNumber } = req.body;
+
+    const user = await User.findById(userId);
+    user.name = name;
+    user.email = email;
+    user.dob = dob;
+    user.phoneNumber = phoneNumber;
+    await user.save();
+
+    res.status(200).json({
+      message: "Sucessfully update user",
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.log(error);
     res.status(500).json({
       message: "Internal server error",
       success: false,

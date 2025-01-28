@@ -11,14 +11,14 @@ router.post("/login", authController.login);
 // Change password
 router.put("/changePassword/:userId", authController.changePassword);
 
-// Logout
-router.get("/logout/:userId", authController.logout);
-
 // Reset password
 router.post("/resetPassword/:userId", authController.resetPassword);
 
 // Google login
 router.post("/googleLogin", authController.googleLogin);
+
+// Google link account
+router.put("/googleLinkAccount/:userId", authController.linkGoogle);
 
 // Facebook login
 router.post("/facebookLogin", authController.facebookLogin);

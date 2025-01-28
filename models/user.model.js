@@ -124,7 +124,7 @@ const UserSchema = new Schema(
       enum: ["activated", "deactivated", "unverified"],
       default: "unverified",
     },
-    Accounts: [SocialAccountSchema],
+    socialAccounts: [SocialAccountSchema],
     // Fcm token
     token: {
       type: String,

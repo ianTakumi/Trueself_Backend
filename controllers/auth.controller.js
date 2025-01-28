@@ -57,15 +57,6 @@ exports.register = async (req, res) => {
   }
 };
 
-// Logout
-exports.logout = async (req, res) => {
-  try {
-    const { userId } = req.params;
-  } catch (error) {
-    return res.status(500).json({ message: error, success: false });
-  }
-};
-
 // Login
 exports.login = async (req, res) => {
   try {
@@ -157,15 +148,16 @@ exports.changePassword = async (req, res) => {
 // Google link account
 exports.linkGoogle = async (req, res) => {
   try {
-    const { provider_id, user_id } = req.body;
+    const { userId } = req.params;
+    const { provider_id } = req.body;
 
-    if (!provider_id || !user_id) {
+    if (!provider_id || !userId) {
       return res
         .status(400)
         .json({ error: "Provider ID and User ID are required" });
     }
 
-    const user = await User.findById(user_id);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -187,9 +179,11 @@ exports.linkGoogle = async (req, res) => {
       user,
     });
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: error, success: false });
   }
 };
+
 // Google login
 exports.googleLogin = async (req, res) => {
   try {
