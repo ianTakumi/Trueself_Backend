@@ -7,10 +7,6 @@ const Schema = mongoose.Schema;
 
 const UserSchema = new Schema(
   {
-    accountId: {
-      type: String,
-      trim: true,
-    },
     name: {
       type: String,
       required: [true, "Please enter your name"],

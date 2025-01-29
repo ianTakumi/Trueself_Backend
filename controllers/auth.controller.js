@@ -187,6 +187,25 @@ exports.linkGoogle = async (req, res) => {
 // Google login
 exports.googleLogin = async (req, res) => {
   try {
+    const { email, sub } = req.body;
+
+    if (!email || !sub) {
+      return res
+        .status(400)
+        .json({ message: "Email and sub are required", success: false });
+    }
+
+    let user = await User.findOne({ "socialAccounts.provider_id": sub, email });
+
+    if (user) {
+      const token = user.getJwtToken();
+      return res.status(200).json({ token, success: true, user });
+    } else {
+      return res.status(400).json({
+        message: "No account linked to this Google account",
+        success: false,
+      });
+    }
   } catch (error) {
     return res.status(500).json({ message: error, success: false });
   }
