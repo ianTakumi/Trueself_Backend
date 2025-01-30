@@ -12,7 +12,10 @@ router.post("/login", authController.login);
 router.put("/changePassword/:userId", authController.changePassword);
 
 // Reset password
-router.post("/resetPassword/:userId", authController.resetPassword);
+router.post("/resetPassword/:jwtToken", authController.resetPassword);
+
+// Reset password request
+router.post("/resetPasswordRequest", authController.resetPasswordRequest);
 
 // Google login
 router.post("/googleLogin", authController.googleLogin);

@@ -1,9 +1,11 @@
 const User = require("../models/user.model");
 const upload = require("../middlewares/multer.middleware");
+const jwt = require("jsonwebtoken");
 const {
   removeFromCloudinary,
   uploadPic,
 } = require("../configs/cloudinary.config");
+const { sendRequestPasswordEmail } = require("../configs/nodemailer.config");
 
 // Register a new user
 exports.register = async (req, res) => {
@@ -93,12 +95,52 @@ exports.login = async (req, res) => {
   }
 };
 
-// Reset password
+// Reset password request
+exports.resetPasswordRequest = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "User not found", success: false });
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    await sendRequestPasswordEmail(user.name, email, token);
+
+    res
+      .status(200)
+      .json({ token, success: true, message: "Token sent to email" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: error, success: false });
+  }
+};
+
 exports.resetPassword = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const { jwtToken } = req.params;
+    const { password, confirmPassword } = req.body;
+    console.log(req.params);
+    console.log(req.body);
+
+    const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET);
+    console.log(decoded);
+    const user = await User.findById(decoded.id);
+
+    user.password = password;
+    await user.save();
+
+    res
+      .status(200)
+      .json({ message: "Password reset successful", success: true });
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: error, success: false });
   }
 };
