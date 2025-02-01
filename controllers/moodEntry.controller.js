@@ -15,6 +15,17 @@ exports.getAllMoodEntriesBasedOnUserId = async (req, res) => {
   }
 };
 
+// Get all mood per month based on userId
+exports.getAllMoodEntriesBasedOnUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const moodEntries = await MoodEntry.find({ user: userId });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 // Create a new mood entry
 exports.createMoodEntry = async (req, res) => {
   try {

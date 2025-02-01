@@ -5,7 +5,10 @@ const {
   removeFromCloudinary,
   uploadPic,
 } = require("../configs/cloudinary.config");
-const { sendRequestPasswordEmail } = require("../configs/nodemailer.config");
+const {
+  sendRequestPasswordEmail,
+  sendVerificationEmail,
+} = require("../configs/nodemailer.config");
 
 // Register a new user
 exports.register = async (req, res) => {
@@ -20,7 +23,7 @@ exports.register = async (req, res) => {
       password,
       sexualOrientation,
     } = req.body;
-
+    console.log(req.body);
     if (
       !name ||
       !email ||
@@ -40,19 +43,53 @@ exports.register = async (req, res) => {
       email,
       phoneNumber,
       dob,
-      genderIdentity,
-      sexualOrientation,
-      pronouns,
+      genderIdentity: genderIdentity.value,
+      sexualOrientation: sexualOrientation.value,
+      pronouns: pronouns.value,
       password,
     });
 
     await user.save();
+
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    await sendVerificationEmail(user.name, user.email, token);
 
     res.status(201).json({
       message: "Successfully created user",
       success: true,
       data: user,
     });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: error, success: false });
+  }
+};
+
+// Verify email
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+    console.log(token);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log(decoded);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "User not found", success: false });
+    }
+
+    user.status = "verified";
+    await user.save();
+    res.status(200).json({ message: "Email verified", success: true });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: error, success: false });
@@ -82,6 +119,7 @@ exports.login = async (req, res) => {
     // Check if password is correct
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.log("Password is incorrect");
       return res
         .status(400)
         .json({ message: "Invalid Email or Password", success: false });

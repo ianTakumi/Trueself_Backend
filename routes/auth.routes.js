@@ -5,6 +5,9 @@ const authController = require("../controllers/auth.controller");
 // Register a new user
 router.post("/register", authController.register);
 
+// Verify email
+router.get("/verifyEmail/:token", authController.verifyEmail);
+
 // Login
 router.post("/login", authController.login);
 

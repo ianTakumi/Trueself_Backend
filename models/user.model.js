@@ -117,7 +117,7 @@ const UserSchema = new Schema(
       type: String,
       required: [true, "Status is required"],
       trim: true,
-      enum: ["activated", "deactivated", "unverified"],
+      enum: ["activated", "deactivated", "unverified", "verified"],
       default: "unverified",
     },
     socialAccounts: [SocialAccountSchema],
