@@ -237,8 +237,78 @@ const sendVerificationEmail = async (name, email, token) => {
     throw error;
   }
 };
+
+const deleteSuccessEmail = async (name, email) => {
+  const htmlTemplate = `<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account Deleted</title>
+  </head>
+  <body
+    style="
+      background-color: #fffacd;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      border="0"
+      style="
+        max-width: 600px;
+        margin: auto;
+        background: #f4dad1;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      "
+    >
+      <tr>
+        <td style="text-align: center">
+          <h1 style="color: #c8a2c8">Account Successfully Deleted</h1>
+          <p style="color: #5a5a5a; font-size: 16px">
+            Your account and all associated data have been permanently removed.
+          </p>
+          <p style="color: #5a5a5a; font-size: 14px">
+            If this was a mistake or you need assistance, please
+            <a
+              href="mailto:support@example.com"
+              style="color: #b0e0e6; text-decoration: none"
+              >contact support</a
+            >.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  `;
+
+  const mailOptions = {
+    from: process.env.GOOGLE_EMAIL,
+    to: email,
+    subject: "Account Deleted",
+    html: htmlTemplate,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent:", info.response);
+  } catch (error) {
+    console.error("❌ Error sending email:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   sendAdminEmail,
   sendRequestPasswordEmail,
   sendVerificationEmail,
+  deleteSuccessEmail,
 };

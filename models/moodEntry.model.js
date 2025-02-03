@@ -11,6 +11,7 @@ const MoodEntrySchema = new Schema(
     mood: {
       type: String,
       required: true,
+      enum: ["Happy", "Sad", "Angry", "Anxious", "Neutral"],
     },
     note: {
       type: String,

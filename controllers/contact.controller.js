@@ -68,7 +68,7 @@ exports.updateContact = async (req, res) => {
         .json({ message: "Contact not found", success: false });
     }
 
-    contact.status = status;
+    contact.status = status.value;
     await contact.save();
     res
       .status(200)

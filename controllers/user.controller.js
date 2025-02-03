@@ -172,6 +172,18 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
+exports.updateProfilePicture = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
 exports.updateAdminProfile = async (req, res) => {
   try {
     const { userId } = req.params;

@@ -5,6 +5,18 @@ const moodEntryController = require("../controllers/moodEntry.controller");
 // Get all mood entries based on user ID
 router.get("/:userId", moodEntryController.getAllMoodEntriesBasedOnUserId);
 
+// Get all mood per month based on userId
+router.get(
+  "/moodPerMonth/:userId",
+  moodEntryController.getMoodPerMonthBasedOnUserId
+);
+
+// Get mood percentages based on user ID
+router.get(
+  "/moodPercentages/:userId",
+  moodEntryController.getMoodPercentagesBasedOnUserId
+);
+
 // Create a new mood entry
 router.post("/:userId", moodEntryController.createMoodEntry);
 
