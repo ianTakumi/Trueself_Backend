@@ -2,6 +2,10 @@ const User = require("../models/user.model");
 const upload = require("../middlewares/multer.middleware");
 const path = require("path");
 const { sendAdminEmail } = require("../configs/nodemailer.config");
+const {
+  uploadPic,
+  removeFromCloudinary,
+} = require("../configs/cloudinary.config");
 
 // Check uniqueness
 exports.checkUnique = async (req, res) => {
@@ -172,18 +176,53 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-exports.updateProfilePicture = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const user = await User.findById(userId);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({
-      message: "Internal server error",
-      success: false,
-    });
-  }
-};
+exports.updateProfilePicture = [
+  upload.single("profilePicture"),
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+
+      const user = await User.findById(userId);
+
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: "User not found", success: false });
+      }
+
+      let profile;
+      if (req.file) {
+        const result = await uploadPic(req.file, "users");
+
+        if (user.profile && user.profile.public_id) {
+          await removeFromCloudinary(user.profile.public_id);
+        }
+
+        profile = {
+          public_id: result.public_id,
+          url: result.secure_url,
+        };
+      }
+
+      if (profile) {
+        user.profile = profile;
+      }
+
+      await user.save();
+
+      res
+        .status(200)
+        .json({ message: "Profile picture updated", success: true, user });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({
+        message: "Internal server error",
+        success: false,
+      });
+    }
+  },
+];
+
 exports.updateAdminProfile = async (req, res) => {
   try {
     const { userId } = req.params;

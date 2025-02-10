@@ -291,9 +291,34 @@ exports.googleLogin = async (req, res) => {
   }
 };
 
-// Facebook login
-exports.facebookLogin = async (req, res) => {
+// Google sign up
+exports.googleSignUp = async (req, res) => {
   try {
+    const { email, sub, name } = req.body;
+
+    if (!email || !sub || !name) {
+      return res
+        .status(400)
+        .json({ message: "Email, sub and name are required", success: false });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      return res
+        .status(400)
+        .json({ message: "User already exists", success: false });
+    }
+
+    user = new User({
+      email,
+      name,
+      socialAccounts: [{ provider: "google", provider_id: sub }],
+    });
+
+    await user.save();
+    const token = user.getJwtToken();
+    return res.status(201).json({ token, success: true, user });
   } catch (error) {
     return res.status(500).json({ message: error, success: false });
   }

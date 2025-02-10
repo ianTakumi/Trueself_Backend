@@ -23,6 +23,12 @@ router.post("/space/:userId", userController.joinSpace);
 // Update profile
 router.put("/:userId", userController.updateProfile);
 
+// Update profile picture
+router.put(
+  "/update-profile-picture/:userId",
+  userController.updateProfilePicture
+);
+
 // Update admin profile
 router.put("/admin/:userId", userController.updateAdminProfile);
 

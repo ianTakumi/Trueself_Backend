@@ -27,6 +27,8 @@
     "nodemailer": "^6.10.0",
     "nodemon": "^3.1.9",
     "papaparse": "^5.5.1",
+    "passport": "^0.7.0",
+    "passport-facebook": "^3.0.0",
     "streamifier": "^0.1.1"
   }
 }

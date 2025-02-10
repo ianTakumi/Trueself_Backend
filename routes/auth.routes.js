@@ -26,7 +26,4 @@ router.post("/googleLogin", authController.googleLogin);
 // Google link account
 router.put("/googleLinkAccount/:userId", authController.linkGoogle);
 
-// Facebook login
-router.post("/facebookLogin", authController.facebookLogin);
-
 module.exports = router;
