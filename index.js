@@ -16,6 +16,7 @@ const moodEntryRoutes = require("./routes/moodEntry.routes");
 const contactRoutes = require("./routes/contact.routes");
 const anxietyPreditionRoutes = require("./routes/anxietyPrediction.routes");
 const facebookRoutes = require("./routes/facebook-auth.routes");
+const journalEntryRoutes = require("./routes/JournalEntry.routes");
 
 // Initializing express
 const app = express();
@@ -36,6 +37,7 @@ app.use("/api/v1/moodEntries", moodEntryRoutes);
 app.use("/api/v1/contacts", contactRoutes);
 app.use("/api/v1/anxietyPredictions", anxietyPreditionRoutes);
 app.use("/api/v1/facebook", facebookRoutes);
+app.use("/api/v1/journalEntries", journalEntryRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URL)

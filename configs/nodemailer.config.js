@@ -79,7 +79,7 @@ const sendRequestPasswordEmail = async (name, email, token) => {
             to proceed:
           </p>
           <a
-            href="${devUrl}/reset-password?token=${token}"
+            href="http://localhost:3000/reset-password?token=${token}"
             style="
               display: inline-block;
               margin-top: 20px;
@@ -185,7 +185,9 @@ const sendVerificationEmail = async (name, email, token) => {
           clicking the button below:
         </p>
         <a
-          href="http://${devUrl}/success-verified/${token}"
+          href="${devUrl}/success-verified/${token}"
+          href="http://localhost:3000/success-verified/${token}"
+
           style="
             display: inline-block;
             margin-top: 20px;

@@ -13,6 +13,22 @@ exports.getAllPredictions = async (req, res) => {
   }
 };
 
+// Count all predictions
+exports.countPredictions = async (req, res) => {
+  try {
+    const count = await AnxietyPrediction.countDocuments(); // Count total predictions
+
+    res.status(200).json({
+      message: "Total number of predictions",
+      success: true,
+      count: count,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 // Get a single prediction
 exports.getSinglePrediction = async (req, res) => {
   try {
