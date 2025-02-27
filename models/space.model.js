@@ -14,7 +14,30 @@ const SpaceSchema = new Schema(
       required: true,
       trim: true,
     },
-    image: {
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "Please provide the creator of the space"],
+    },
+    members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    status: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected", "Suspended", "Archived"],
+      default: "Pending",
+    },
+    banner: {
+      public_id: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      url: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+    },
+    profile: {
       public_id: {
         type: String,
         required: true,

@@ -3,13 +3,46 @@ const AnxietyPrediction = require("../models/AnxietyPrediction.model");
 // Get all predictions
 exports.getAllPredictions = async (req, res) => {
   try {
-    const predictions = await AnxietyPrediction.find().sort({ createdAt: 1 });
+    const predictions = await AnxietyPrediction.find({
+      createdAt: { $exists: true },
+      updatedAt: { $exists: true },
+    })
+      .populate("userId")
+      .sort({ createdAt: 1 });
+
     res
       .status(200)
       .json({ message: "All predictions", success: true, data: predictions });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: error, success: false });
+  }
+};
+
+// Get all prediction based on user id
+exports.getAllPredictionsByUserID = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const predictions = await AnxietyPrediction.find({
+      userId: { $eq: userId.trim() },
+    });
+
+    if (!predictions.length) {
+      return res
+        .status(404)
+        .json({ message: "No predictions found for this user." });
+    }
+
+    res
+      .status(200)
+      .json({
+        message: "Successfully fetched all predictions",
+        success: true,
+        data: predictions,
+      });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 

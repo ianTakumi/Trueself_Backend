@@ -13,6 +13,37 @@ exports.getAllContact = async (req, res) => {
   }
 };
 
+exports.getMonthlyEngagements = async (req, res) => {
+  try {
+    const engagements = await Contact.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          total: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { "_id.year": 1, "_id.month": 1 },
+      },
+      {
+        $project: {
+          _id: 0,
+          year: "$_id.year",
+          month: "$_id.month",
+          total: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json(engagements);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Get a single contact
 exports.getSingleContact = async (req, res) => {
   try {

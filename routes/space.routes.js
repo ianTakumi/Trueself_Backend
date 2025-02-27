@@ -13,7 +13,7 @@ router.get("/count", spaceController.getSpaceCount);
 router.get("/:spaceId", spaceController.getSpaceById);
 
 // Create space
-router.post("/", spaceController.createSpace);
+router.post("/:userId", spaceController.createSpace);
 
 // Update space
 router.put("/:spaceId", spaceController.updateSpace);

@@ -8,7 +8,7 @@ const upload = require("../middlewares/multer.middleware");
 // Get all spaces
 exports.getSpaces = async (req, res) => {
   try {
-    const spaces = await Space.find();
+    const spaces = await Space.find().populate("createdBy");
     res.json({
       message: "Successfully fetch spaces",
       success: true,
@@ -56,10 +56,20 @@ exports.getSpaceById = async (req, res) => {
 };
 
 exports.createSpace = [
-  upload.single("image"),
+  upload.fields([
+    { name: "profile", maxCount: 1 },
+    { name: "banner", maxCount: 1 },
+  ]),
   async (req, res) => {
     try {
       const { name, description } = req.body;
+      const { userId } = req.params;
+      const profileImageObj = req.files["profile"]
+        ? req.files["profile"][0]
+        : null;
+      const bannerImageObj = req.files["banner"]
+        ? req.files["banner"][0]
+        : null;
 
       if (!name || !description) {
         return res
@@ -67,23 +77,31 @@ exports.createSpace = [
           .json({ message: "Please fill all fields", success: false });
       }
 
-      if (!req.file) {
+      if (!profileImageObj || !bannerImageObj) {
         return res
           .status(400)
-          .json({ message: "Please upload an image", success: false });
+          .json({ message: "Both profile and banner images are required." });
       }
 
-      const result = await uploadSpacePic(req.file, "spaces");
+      const profileResult = await uploadSpacePic(profileImageObj, "spaces");
+      const bannerResult = await uploadSpacePic(bannerImageObj, "spaces");
 
-      const image = {
-        public_id: result.public_id,
-        url: result.secure_url,
+      const banner = {
+        public_id: bannerResult.public_id,
+        url: bannerResult.secure_url,
+      };
+
+      const profile = {
+        public_id: profileResult.public_id,
+        url: profileResult.secure_url,
       };
 
       const space = new Space({
         name,
         description,
-        image,
+        banner,
+        profile,
+        createdBy: userId,
       });
 
       const savedSpace = await space.save();
@@ -100,11 +118,22 @@ exports.createSpace = [
 
 // Update space
 exports.updateSpace = [
-  upload.single("image"),
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "banner", maxCount: 1 },
+  ]),
   async (req, res) => {
     try {
       const { name, description } = req.body;
-      const { spaceId } = req.params;
+      const { spaceId, userId } = req.params;
+      const profileImageObj = req.files["profile"]
+        ? req.files["profile"][0]
+        : null;
+      const bannerImageObj = req.files["banner"]
+        ? req.files["banner"][0]
+        : null;
+      let profile;
+      let banner;
 
       if (!name || !description) {
         return res
@@ -113,30 +142,44 @@ exports.updateSpace = [
       }
 
       const space = await Space.findById(spaceId);
+
+      space.name = name;
+      space.description = description;
+
       if (!space) {
         return res
           .status(404)
           .json({ message: "Space not found", success: false });
       }
 
-      let image;
-      if (req.file) {
-        const result = await uploadSpacePic(req.file, "spaces");
+      if (profileImageObj) {
+        const profileResult = await uploadSpacePic(profileImageObj, "spaces");
 
-        if (space.image && space.image.public_id) {
-          await removeFromCloudinary(space.image.public_id);
+        const profile = {
+          public_id: profileResult.public_id,
+          url: profileResult.secure_url,
+        };
+
+        if (space.profile && space.profile.public_id) {
+          await removeFromCloudinary(space.profile.public_id);
         }
 
-        image = {
-          public_id: result.public_id,
-          url: result.secure_url,
-        };
+        space.profile = profile;
       }
-      space.name = name;
-      space.description = description;
 
-      if (image) {
-        space.image = image;
+      if (bannerImageObj) {
+        const bannerResult = await uploadSpacePic(bannerImageObj, "spaces");
+
+        banner = {
+          public_id: bannerResult.public_id,
+          url: bannerResult.secure_url,
+        };
+
+        if (space.banner && space.banner.public_id) {
+          await removeFromCloudinary(space.banner.public_id);
+        }
+
+        space.banner = banner;
       }
 
       await space.save();
@@ -166,8 +209,12 @@ exports.deleteSpace = async (req, res) => {
       });
     }
 
-    if (space.image?.public_id) {
+    if (space.profile?.public_id) {
       await removeFromCloudinary(space.image.public_id);
+    }
+
+    if (space.banner?.public_id) {
+      await removeFromCloudinary(space.banner.public_id);
     }
 
     res.json({

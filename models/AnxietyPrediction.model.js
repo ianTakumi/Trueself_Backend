@@ -4,9 +4,8 @@ const Schema = mongoose.Schema;
 const AnxietyPredictionSchema = new Schema(
   {
     userId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      type: String,
+      required: [true, "User id is required"],
     },
     severityScore: {
       type: Number,

@@ -1,5 +1,6 @@
 const MoodEntry = require("../models/moodEntry.model");
 const mongoose = require("mongoose");
+const dayjs = require("dayjs");
 
 const getMoodPercentages = async (userId) => {
   try {
@@ -76,6 +77,33 @@ exports.getAllMoodEntriesBasedOnUserId = async (req, res) => {
   }
 };
 
+// Get single mood entry based on user ID
+exports.getSingleMoodBasedOnUserId = async (req, res) => {
+  try {
+    const { userId, moodEntryId } = req.params;
+
+    const moodEntry = await MoodEntry.findOne({
+      user: userId,
+      _id: moodEntryId,
+    });
+
+    if (!moodEntry) {
+      return res.status(404).json({
+        message: "Mood entry not found",
+        success: false,
+      });
+    }
+
+    res.status(200).json({
+      moodEntry,
+      success: true,
+      message: "Successfully fetch single mood entry",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 // Get all moods per month based on userId
 exports.getMoodPerMonthBasedOnUserId = async (req, res) => {
   try {
@@ -136,7 +164,6 @@ exports.getMoodPercentagesBasedOnUserId = async (req, res) => {
   try {
     const { userId } = req.params;
     const moodPercentages = await getMoodPercentages(userId);
-
     res.status(200).json({
       moodPercentages,
       success: true,
@@ -145,6 +172,62 @@ exports.getMoodPercentagesBasedOnUserId = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.message, success: false });
+  }
+};
+
+exports.getMostFrequentMoodPerDay = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { month, year } = req.query;
+
+    const startDate = dayjs(`${year}-${month}-01`).startOf("month").toDate();
+    const endDate = dayjs(startDate).endOf("month").toDate();
+
+    const aggregatedData = await MoodEntry.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(userId),
+          createdAt: {
+            $gte: startDate,
+            $lt: endDate,
+          },
+        },
+      },
+      {
+        $project: {
+          day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          mood: 1,
+        },
+      },
+      {
+        $group: {
+          _id: { day: "$day", mood: "$mood" },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { "_id.day": 1, count: -1 },
+      },
+      {
+        $group: {
+          _id: "$_id.day",
+          mostFrequentMood: { $first: "$_id.mood" },
+          moodCount: { $first: "$count" },
+        },
+      },
+    ]);
+
+    const result = aggregatedData.map((entry) => ({
+      date: entry._id,
+      mood: entry.mostFrequentMood,
+      count: entry.moodCount,
+    }));
+
+    console.log(result);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in getting most frequent mood per day:", error);
+    return res.status(500).json({ message: "Error retrieving mood data" });
   }
 };
 
@@ -221,6 +304,7 @@ exports.deleteMoodEntry = async (req, res) => {
     const moodEntry = await MoodEntry.findById(moodEntryId);
 
     if (!moodEntry) {
+      console.log("Mood entry not found");
       return res.status(404).json({
         success: false,
         message: "Mood entry not found",
@@ -241,6 +325,7 @@ exports.deleteMoodEntry = async (req, res) => {
       message: "Successfully deleted the mood entry",
     });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: error.message, success: false });
   }
 };

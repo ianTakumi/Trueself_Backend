@@ -4,6 +4,12 @@ const router = require("express").Router();
 // Get all predictions
 router.get("/", AnxietyPredictionController.getAllPredictions);
 
+// Get all predictions by userId
+router.get(
+  "/user/:userId",
+  AnxietyPredictionController.getAllPredictionsByUserID
+);
+
 // Count all predictions
 router.get("/count", AnxietyPredictionController.countPredictions);
 
