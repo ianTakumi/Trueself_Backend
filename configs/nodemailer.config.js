@@ -308,9 +308,193 @@ const deleteSuccessEmail = async (name, email) => {
   }
 };
 
+const sendOTPEmail = async (name, email, otp) => {
+  let otpDigits = "";
+
+  for (let i = 0; i < otp.length; i++) {
+    otpDigits += `<span style="display: inline-block; padding: 4px;">${otp[i]}</span>`;
+  }
+
+  const htmlTemplate = `<!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>OTP Email Verification</title>
+      </head>
+      <body style="background-color: #f7f7f7; text-align: center; padding: 40px">
+        <div
+          style="
+            max-width: 400px;
+            background: white;
+            padding: 30px;
+            margin: auto;
+            border-radius: 12px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+          "
+        >
+          <!-- Logo -->
+          <img
+            src="https://res.cloudinary.com/dco6n59if/image/upload/v1741011690/zsztuvvi6079a2i2k7o2.png"
+            alt="True Self Logo"
+            style="width: 80px; margin-bottom: 10px"
+          />
+
+          <h2 style="color: #333; font-weight: bold">
+            Welcome to True Self, ${name}! 🎉
+          </h2>
+          <p style="color: #666; font-size: 14px; margin-bottom: 20px">
+            You're almost there! To complete your sign-up, please enter the
+            verification code below within
+            <strong>10 minutes.</strong>
+          </p>
+
+          <!-- OTP Box -->
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              background: linear-gradient(135deg, #444, #222);
+              color: white;
+              font-size: 22px;
+              font-weight: bold;
+              padding: 12px 18px;
+              border-radius: 12px;
+              letter-spacing: 8px;
+              box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+              width: fit-content;
+              margin: 20px auto;
+            "
+          >
+            ${otpDigits}
+          </div>
+
+          <p style="color: #888; font-size: 12px; margin-top: 20px">
+            If you didn’t request this, please ignore this email.<br />
+            Need help?
+            <a href="#" style="color: #007bff; text-decoration: none"
+              >Contact Support</a
+            >.
+          </p>
+        </div>
+      </body>
+    </html>
+    `;
+
+  const mailOptions = {
+    from: process.env.GOOGLE_EMAIL,
+    to: email,
+    subject: "One Time Password",
+    html: htmlTemplate,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent:", info.response);
+    return info;
+  } catch (error) {
+    console.error("❌ Error sending otp email:", error);
+    throw error;
+  }
+};
+
+const sendRequestPasswordEmailMobile = async (name, email, otp) => {
+  let otpDigits = "";
+
+  for (let i = 0; i < otp.length; i++) {
+    otpDigits += `<span style="display: inline-block; padding: 4px;">${otp[i]}</span>`;
+  }
+
+  const htmlTemplate = `<!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Reset Your Password</title>
+      </head>
+      <body style="background-color: #f7f7f7; text-align: center; padding: 40px">
+        <div
+          style="
+            max-width: 400px;
+            background: white;
+            padding: 30px;
+            margin: auto;
+            border-radius: 12px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+          "
+        >
+          <!-- Logo -->
+          <img
+            src="https://res.cloudinary.com/dco6n59if/image/upload/v1741011690/zsztuvvi6079a2i2k7o2.png"
+            alt="True Self Logo"
+            style="width: 80px; margin-bottom: 10px"
+          />
+
+          <h2 style="color: #333; font-weight: bold">
+            Reset Your Password, ${name}
+          </h2>
+          <p style="color: #666; font-size: 14px; margin-bottom: 20px">
+            We received a request to reset your password. Use the verification code
+            below within
+            <strong>10 minutes</strong> to proceed.
+          </p>
+
+          <!-- OTP Box -->
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              background: linear-gradient(135deg, #444, #222);
+              color: white;
+              font-size: 22px;
+              font-weight: bold;
+              padding: 12px 18px;
+              border-radius: 12px;
+              letter-spacing: 8px;
+              box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+              width: fit-content;
+              margin: 20px auto;
+            "
+          >
+            ${otpDigits}
+          </div>
+
+          <p style="color: #888; font-size: 12px; margin-top: 20px">
+            If you didn’t request this, please ignore this email.<br />
+            Need help?
+            <a href="#" style="color: #007bff; text-decoration: none"
+              >Contact Support</a
+            >.
+          </p>
+        </div>
+      </body>
+    </html>
+    `;
+
+  const mailOptions = {
+    from: process.env.GOOGLE_EMAIL,
+    to: email,
+    subject: "Reset Your Password",
+    html: htmlTemplate,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent:", info.response);
+    return info;
+  } catch (error) {
+    console.error("❌ Error sending otp email:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   sendAdminEmail,
+  sendRequestPasswordEmailMobile,
   sendRequestPasswordEmail,
   sendVerificationEmail,
   deleteSuccessEmail,
+  sendOTPEmail,
 };

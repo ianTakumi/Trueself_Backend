@@ -66,6 +66,7 @@ exports.createJournalEntry = async (req, res) => {
 exports.updateJournalEntry = async (req, res) => {
   try {
     const { entryId } = req.params;
+    const { title, content } = req.body;
 
     const entry = await JournalEntry.findById(entryId);
 
@@ -77,7 +78,7 @@ exports.updateJournalEntry = async (req, res) => {
 
     const updatedEntry = await JournalEntry.findByIdAndUpdate(
       entryId,
-      req.body,
+      { title, content },
       {
         new: true,
         runValidators: true,

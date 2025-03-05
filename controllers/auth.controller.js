@@ -1,6 +1,9 @@
 const User = require("../models/user.model");
 const upload = require("../middlewares/multer.middleware");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const { sendOTPEmail } = require("../configs/nodemailer.config");
+
 const {
   removeFromCloudinary,
   uploadPic,
@@ -8,7 +11,9 @@ const {
 const {
   sendRequestPasswordEmail,
   sendVerificationEmail,
+  sendRequestPasswordEmailMobile,
 } = require("../configs/nodemailer.config");
+const OTP = require("../models/OTP.model");
 
 // Register a new user
 exports.register = async (req, res) => {
@@ -23,7 +28,7 @@ exports.register = async (req, res) => {
       password,
       sexualOrientation,
     } = req.body;
-    console.log(req.body);
+
     if (
       !name ||
       !email ||
@@ -72,6 +77,73 @@ exports.register = async (req, res) => {
   }
 };
 
+// Register a new user on mobile
+exports.registerMobile = async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      phoneNumber,
+      pronouns,
+      sexualOrientation,
+      genderIdentity,
+      confirmPassword,
+      password,
+      dob,
+    } = req.body;
+
+    if (
+      !name ||
+      !email ||
+      !phoneNumber ||
+      !pronouns ||
+      !sexualOrientation ||
+      !genderIdentity ||
+      !confirmPassword ||
+      !password ||
+      !dob
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Please fill all fields", success: false });
+    }
+
+    if (password !== confirmPassword) {
+      return res
+        .status(400)
+        .json({ message: "Passwords do not match", success: false });
+    }
+
+    const user = new User({
+      name,
+      email,
+      phoneNumber,
+      pronouns,
+      sexualOrientation,
+      genderIdentity,
+      password,
+      dob,
+    });
+
+    await user.save();
+    const otpCode = crypto.randomInt(100000, 999999).toString();
+    const otpExpires = Date.now() + 10 * 60 * 1000;
+
+    await OTP.create({ email, code: otpCode, expiresAt: otpExpires });
+
+    sendOTPEmail(user.name, user.email, otpCode);
+
+    res.status(201).json({
+      message: "Successfully created user",
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: error, success: false });
+  }
+};
+
 // Verify email
 exports.verifyEmail = async (req, res) => {
   try {
@@ -100,8 +172,11 @@ exports.verifyEmail = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    console.log(req.body);
+    const normalizedEmail = email.toLowerCase();
 
+    const user = await User.findOne({ email: normalizedEmail });
+    console.log(user);
     // Check if the user exists
     if (!user) {
       return res
@@ -153,6 +228,72 @@ exports.resetPasswordRequest = async (req, res) => {
     res
       .status(200)
       .json({ token, success: true, message: "Token sent to email" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: error, success: false });
+  }
+};
+
+// Reset password request mobile
+exports.resetPasswordRequestMobile = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({
+      email,
+    });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "User not found", success: false });
+    }
+
+    const otpCode = crypto.randomInt(100000, 999999).toString();
+    const otpExpires = Date.now() + 10 * 60 * 1000;
+    await OTP.create({ email, code: otpCode, expiresAt: otpExpires });
+
+    await sendRequestPasswordEmailMobile(user.name, email, otpCode);
+
+    res.status(200).json({ message: "OTP sent to email", success: true });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: error, success: false });
+  }
+};
+
+// Verify OTP RESET CODE MOBILE
+exports.verifyOTPReset = async (req, res) => {
+  try {
+    const { otp, email } = req.body;
+
+    if (!otp || !email) {
+      return res
+        .status(400)
+        .json({ message: "Please provide OTP and email", success: false });
+    }
+
+    const otpData = await OTP.findOne({ email, code: otp });
+
+    if (!otpData) {
+      return res.status(409).json({ message: "Invalid OTP", success: false });
+    }
+
+    if (new Date(otpData.expiresAt) < new Date()) {
+      await OTP.findOneAndDelete({ email: email, code: otp });
+      return res
+        .status(410)
+        .json({ message: "OTP has expired", success: false });
+    }
+
+    await OTP.findOneAndDelete({ email: email, code: otp });
+
+    const user = await User.findOne({ email });
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.status(200).json({ message: "OTP verified", success: true, token });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: error, success: false });
@@ -319,6 +460,101 @@ exports.googleSignUp = async (req, res) => {
     const token = user.getJwtToken();
     return res.status(201).json({ token, success: true, user });
   } catch (error) {
+    return res.status(500).json({ message: error, success: false });
+  }
+};
+
+// Check unique email
+exports.checkUniqueEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    if (!email) {
+      return res
+        .status(400)
+        .json({ message: "Email is required", success: false });
+    }
+
+    const user = await User.findOne({
+      email,
+    });
+
+    console.log(user);
+
+    if (user) {
+      return res
+        .status(409)
+        .json({ message: "Email already exists", success: false });
+    }
+
+    return res.status(200).json({ message: "Email is unique" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: error, success: false });
+  }
+};
+
+// Check phone number unique
+exports.checkUniquePhoneNumber = async (req, res) => {
+  try {
+    const { phoneNumber } = req.params;
+
+    if (!phoneNumber) {
+      return res
+        .status(400)
+        .json({ message: "Phone number is required", success: false });
+    }
+
+    const user = await User.findOne({
+      phoneNumber,
+    });
+
+    if (user) {
+      return res
+        .status(409)
+        .json({ message: "Phone number already exists", success: false });
+    }
+
+    return res.status(200).json({ message: "Phone number is unique" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: error, success: false });
+  }
+};
+
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { otp, email } = req.body;
+
+    if (!otp || !email) {
+      return res
+        .status(400)
+        .json({ message: "Please provide OTP and email", success: false });
+    }
+
+    const otpData = await OTP.findOne({ email, code: otp });
+
+    if (!otpData) {
+      return res.status(400).json({ message: "Invalid OTP", success: false });
+    }
+
+    if (new Date(otpData.expiresAt) < new Date()) {
+      await OTP.findOneAndDelete({ email: email, code: otp }); // Clean up expired OTP
+      return res
+        .status(410)
+        .json({ message: "OTP has expired", success: false });
+    }
+
+    await OTP.findOneAndDelete({ email: email, code: otp });
+
+    const user = await User.findOne({ email });
+
+    user.status = "verified";
+    await user.save();
+
+    return res.status(200).json({ message: "Email verified", success: true });
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: error, success: false });
   }
 };
