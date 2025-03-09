@@ -42,4 +42,7 @@ router.post("/googleLogin", authController.googleLogin);
 // Google link account
 router.put("/googleLinkAccount/:userId", authController.linkGoogle);
 
+// Google sign up
+router.post("/googleSignUp", authController.googleSignUp);
+
 module.exports = router;

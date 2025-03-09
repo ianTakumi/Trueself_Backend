@@ -14,6 +14,23 @@ exports.getPostBasedOnUserID = async (req, res) => {
   }
 };
 
+exports.getPostBasedOnCommunity = async (req, res) => {
+  try {
+    const { communityId } = req.params;
+    const posts = await Post.find({
+      communityId,
+    });
+
+    res.status(200).json({
+      data: posts,
+      message: "Successfully fetch posts",
+      success: true,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 // Create a new post
 exports.createPost = async (req, res) => {
   try {

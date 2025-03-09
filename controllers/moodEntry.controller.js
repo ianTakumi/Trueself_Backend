@@ -104,6 +104,66 @@ exports.getSingleMoodBasedOnUserId = async (req, res) => {
   }
 };
 
+exports.getMoodStatsByMonthWeek = async (req, res) => {
+  try {
+    const moodStats = await MoodEntry.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+            createdAt: "$createdAt",
+            mood: "$mood",
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $addFields: {
+          weekOfMonth: {
+            $ceil: { $divide: [{ $dayOfMonth: "$_id.createdAt" }, 7] }, // Week within the month
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: "$_id.year",
+            month: "$_id.month",
+            week: "$weekOfMonth",
+          },
+          moods: {
+            $push: {
+              mood: "$_id.mood",
+              count: "$count",
+            },
+          },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1, "_id.week": 1 } },
+    ]);
+
+    const formattedData = moodStats.map((week) => {
+      const monthName = dayjs()
+        .month(week._id.month - 1)
+        .format("MMMM");
+      const weekLabel = `${monthName} - Week ${week._id.week}`;
+      const moodCounts = { week: weekLabel };
+
+      week.moods.forEach((mood) => {
+        moodCounts[mood.mood] = mood.count;
+      });
+
+      return moodCounts;
+    });
+
+    res.json(formattedData);
+  } catch (error) {
+    console.error("Error fetching mood stats:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 // Get all moods per month based on userId
 exports.getMoodPerMonthBasedOnUserId = async (req, res) => {
   try {

@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const moodEntryController = require("../controllers/moodEntry.controller");
 
+// Get mood stats per week for admin
+router.get("/moodStatsByWeek", moodEntryController.getMoodStatsByMonthWeek);
+
 // Get mood per month based on userId (Move this above)
 router.get(
   "/moodPerMonth/:userId",

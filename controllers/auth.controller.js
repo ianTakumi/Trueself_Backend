@@ -434,9 +434,9 @@ exports.googleLogin = async (req, res) => {
 // Google sign up
 exports.googleSignUp = async (req, res) => {
   try {
-    const { email, sub, name } = req.body;
+    const { email, sub, name, dob, password } = req.body;
 
-    if (!email || !sub || !name) {
+    if (!email || !sub || !name || !dob || !password) {
       return res
         .status(400)
         .json({ message: "Email, sub and name are required", success: false });
@@ -453,6 +453,9 @@ exports.googleSignUp = async (req, res) => {
     user = new User({
       email,
       name,
+      password,
+      dob,
+      status: "verified",
       socialAccounts: [{ provider: "google", provider_id: sub }],
     });
 

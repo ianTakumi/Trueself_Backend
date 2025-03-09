@@ -9,6 +9,11 @@ const PostSchema = new Schema(
       ref: "User",
       required: true,
     },
+    communityId: {
+      type: Schema.Types.ObjectId,
+      ref: "Community",
+      required: true,
+    },
     title: {
       type: String,
       required: true,
@@ -19,8 +24,8 @@ const PostSchema = new Schema(
       enum: ["text", "video", "image", "poll", "link"],
       required: true,
     },
-    editorData: {
-      type: Object, // Store data from Editor.js for text posts
+    content: {
+      type: String, // React Quill stores HTML content as a string
       required: function () {
         return this.type === "text";
       },

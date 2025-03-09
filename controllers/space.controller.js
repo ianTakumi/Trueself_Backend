@@ -5,6 +5,14 @@ const {
 } = require("../configs/cloudinary.config");
 const upload = require("../middlewares/multer.middleware");
 
+// Get top communities
+exports.getTopSpaces = async (req, res) => {
+  try {
+  } catch (error) {
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 // Get all spaces
 exports.getSpaces = async (req, res) => {
   try {

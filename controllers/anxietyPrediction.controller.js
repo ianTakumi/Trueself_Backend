@@ -1,5 +1,43 @@
 const AnxietyPrediction = require("../models/AnxietyPrediction.model");
 
+// Get severity score per month
+exports.getSeverirtyScorePerMonth = async (req, res) => {
+  try {
+    const severityScores = await AnxietyPrediction.aggregate([
+      {
+        $match: {
+          createdAt: { $exists: true, $ne: null },
+          updatedAt: { $exists: true, $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          mildCount: {
+            $sum: {
+              $cond: [{ $lte: ["$severityScore", 5] }, 1, 0], // Count mild scores
+            },
+          },
+          severeCount: {
+            $sum: {
+              $cond: [{ $gt: ["$severityScore", 5] }, 1, 0], // Count severe scores
+            },
+          },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }, // Sort results by year & month
+    ]);
+
+    return res.status(200).json({ success: true, data: severityScores });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 // Get all predictions
 exports.getAllPredictions = async (req, res) => {
   try {
@@ -34,13 +72,11 @@ exports.getAllPredictionsByUserID = async (req, res) => {
         .json({ message: "No predictions found for this user." });
     }
 
-    res
-      .status(200)
-      .json({
-        message: "Successfully fetched all predictions",
-        success: true,
-        data: predictions,
-      });
+    res.status(200).json({
+      message: "Successfully fetched all predictions",
+      success: true,
+      data: predictions,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -159,5 +195,38 @@ exports.createPrediction = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Internal server error", success: false });
+  }
+};
+
+// Get the last created prediction
+exports.getLastPrediction = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        message: "User ID is required",
+        success: false,
+      });
+    }
+
+    const lastPrediction = await AnxietyPrediction.findOne({ userId })
+      .sort({ createdAt: -1 })
+      .limit(1);
+
+    if (!lastPrediction) {
+      return res.status(404).json({
+        message: "No prediction found for this user",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: lastPrediction,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: error.message, success: false });
   }
 };

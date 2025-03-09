@@ -23,11 +23,11 @@ const UserSchema = new Schema(
     },
     phoneNumber: {
       type: String,
-      required: [true, "Phone number is required!"],
+      // required: [true, "Phone number is required!"],
     },
     sexualOrientation: {
       type: String,
-      required: [true, "Please enter your sexual orientation"],
+      // required: [true, "Please enter your sexual orientation"],
       enum: [
         "Lesbian",
         "Gay",
@@ -53,7 +53,7 @@ const UserSchema = new Schema(
     },
     genderIdentity: {
       type: String,
-      required: [true, "Please enter your gender identity"],
+      // required: [true, "Please enter your gender identity"],
       enum: [
         "Cisgender",
         "Transgender",
@@ -74,7 +74,7 @@ const UserSchema = new Schema(
     },
     pronouns: {
       type: String,
-      required: [true, "Please enter your pronouns"],
+      // required: [true, "Please enter your pronouns"],
       enum: [
         "He/Him/His",
         "She/Her/Hers",
