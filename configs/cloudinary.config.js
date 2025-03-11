@@ -61,6 +61,43 @@ const uploadPic = (file, folderName) => {
   });
 };
 
+const uploadVideo = (file, folderName) => {
+  return new Promise((resolve, reject) => {
+    const allowedTypes = ["video/mp4", "video/mov", "video/avi", "video/mkv"];
+
+    // Validate file type
+    if (!allowedTypes.includes(file.mimetype)) {
+      return reject(
+        new Error("Invalid file type. Only MP4, MOV, AVI, and MKV are allowed.")
+      );
+    }
+
+    // Create Cloudinary upload stream
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: folderName,
+        resource_type: "video", // Ensures Cloudinary processes it as a video
+        chunk_size: 6000000, // 6MB chunk size (adjust if needed)
+      },
+      (error, result) => {
+        if (error) {
+          console.error("Cloudinary Video Upload Error:", error);
+          reject(error);
+        } else {
+          console.log("Cloudinary Video Upload Result:", result); // Debugging
+          resolve({
+            public_id: result.public_id, // ✅ Ensures public_id is returned
+            url: result.secure_url, // ✅ Ensures video URL is returned
+          });
+        }
+      }
+    );
+
+    // Convert file buffer into a readable stream and upload
+    streamifier.createReadStream(file.buffer).pipe(uploadStream);
+  });
+};
+
 const removeFromCloudinary = (publicId) => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.destroy(publicId, (error, result) => {
@@ -78,4 +115,5 @@ module.exports = {
   uploadSpacePic,
   removeFromCloudinary,
   uploadPic,
+  uploadVideo,
 };
