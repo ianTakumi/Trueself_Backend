@@ -1,5 +1,157 @@
 const AnxietyPrediction = require("../models/AnxietyPrediction.model");
 
+exports.getAnxietySeverityTrendForAll = async (req, res) => {
+  try {
+    // Aggregate data to get the average severity score per date
+    const data = await AnxietyPrediction.aggregate([
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, // Group by date
+          averageSeverityScore: { $avg: "$severityScore" }, // Calculate average severity
+          count: { $sum: 1 }, // Count entries per date
+        },
+      },
+      { $sort: { _id: 1 } }, // Sort by date (ascending)
+    ]);
+
+    if (!data.length) {
+      return res.status(404).json({ message: "No data found" });
+    }
+
+    // Format response for frontend charting
+    const formattedData = data.map((entry) => ({
+      date: entry._id,
+      averageSeverityScore: entry.averageSeverityScore,
+      count: entry.count,
+    }));
+
+    res.status(200).json(formattedData);
+  } catch (error) {
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+};
+
+exports.getScatterPlotData = async (req, res) => {
+  try {
+    const data = await AnxietyPrediction.find(
+      {},
+      { dietQuality: 1, stressLevel: 1, _id: 0 }
+    );
+
+    const scatterData = data.map((entry) => ({
+      x: entry.dietQuality,
+      y: entry.stressLevel,
+    }));
+
+    res.json({ scatterData });
+  } catch (error) {
+    console.error("Error fetching scatter plot data:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getAnxietyDietData = async (req, res) => {
+  try {
+    const results = await AnxietyPrediction.aggregate([
+      {
+        $group: {
+          _id: {
+            dietQuality: { $toInt: "$dietQuality" },
+            anxietySeverity: { $toInt: "$severityScore" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          dietQuality: "$_id.dietQuality",
+          anxietySeverity: "$_id.anxietySeverity",
+          count: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json({ success: true, data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getSeverityBySleepHours = async (req, res) => {
+  try {
+    const sleepRanges = [
+      { range: "3-5", min: 3, max: 5 },
+      { range: "6-8", min: 6, max: 8 },
+      { range: "9+", min: 9, max: 24 },
+    ];
+
+    const data = await Promise.all(
+      sleepRanges.map(async (range) => {
+        const result = await AnxietyPrediction.aggregate([
+          {
+            $match: {
+              sleepHours: { $gte: range.min, $lte: range.max },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              avgSeverity: { $avg: "$severityScore" },
+              count: { $sum: 1 }, // Number of users in this range
+            },
+          },
+        ]);
+
+        return {
+          sleepRange: range.range,
+          avgSeverity: result.length ? result[0].avgSeverity.toFixed(2) : 0,
+          count: result.length ? result[0].count : 0,
+        };
+      })
+    );
+
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get anxiety prediction statistics for pie chart
+exports.getStatsOccupation = async (req, res) => {
+  try {
+    const stats = await AnxietyPrediction.aggregate([
+      {
+        $group: {
+          _id: "$occupation",
+          count: { $sum: 1 },
+          avgSeverity: { $avg: "$severityScore" },
+        },
+      },
+      {
+        $project: {
+          _id: 0, // Hide MongoDB _id field
+          occupation: "$_id", // Rename _id to occupation
+          count: 1,
+          avgSeverity: { $round: ["$avgSeverity", 2] }, // Round to 2 decimal places
+        },
+      },
+      {
+        $sort: { count: -1 }, // Sort in descending order by count
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 // Get severity score per month
 exports.getSeverirtyScorePerMonth = async (req, res) => {
   try {

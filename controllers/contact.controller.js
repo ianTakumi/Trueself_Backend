@@ -13,6 +13,26 @@ exports.getAllContact = async (req, res) => {
   }
 };
 
+// Get status distribution
+exports.getStatusDistribution = async (req, res) => {
+  try {
+    const statusCounts = await Contact.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    res.status(200).json(statusCounts);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get monthly engagements
 exports.getMonthlyEngagements = async (req, res) => {
   try {
     const engagements = await Contact.aggregate([

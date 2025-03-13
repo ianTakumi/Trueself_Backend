@@ -1,6 +1,24 @@
 const AnxietyPredictionController = require("../controllers/anxietyPrediction.controller");
 const router = require("express").Router();
 
+// Get anxiety prediction statistics for pie chart
+router.get("/statsOccupation", AnxietyPredictionController.getStatsOccupation);
+
+// Get anxiety prediction trends
+router.get(
+  "/statsTrends",
+  AnxietyPredictionController.getAnxietySeverityTrendForAll
+);
+
+//Get sleep hours data
+router.get(
+  "/statsSleepHours",
+  AnxietyPredictionController.getSeverityBySleepHours
+);
+
+//Get anxiety data diet quality vs anxiety severirty
+router.get("/statsDietQuality", AnxietyPredictionController.getScatterPlotData);
+
 // Get all predictions
 router.get("/", AnxietyPredictionController.getAllPredictions);
 

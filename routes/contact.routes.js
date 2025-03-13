@@ -5,6 +5,9 @@ const contactController = require("../controllers/contact.controller");
 // Get all contacts
 router.get("/", contactController.getAllContact);
 
+// Get status distribution
+router.get("/status-distribution", contactController.getStatusDistribution);
+
 // Get monthly engagements
 router.get("/monthly-engagements", contactController.getMonthlyEngagements);
 
