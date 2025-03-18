@@ -490,7 +490,174 @@ const sendRequestPasswordEmailMobile = async (name, email, otp) => {
   }
 };
 
+const sendDeactivateEmail = async (name, email) => {
+  const htmlTemplate = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account Deactivation Notice</title>
+  </head>
+  <body
+    style="
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    "
+  >
+    <div
+      style="
+        max-width: 600px;
+        margin: 20px auto;
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.08);
+        text-align: center;
+      "
+    >
+      <!-- Logo -->
+      <img
+        src="https://res.cloudinary.com/dco6n59if/image/upload/v1741011690/zsztuvvi6079a2i2k7o2.png"
+        alt="True Self Logo"
+        style="width: 80px; margin-bottom: 15px"
+      />
+
+      <!-- Header -->
+      <h2 style="color: #333; font-size: 22px; margin-bottom: 10px">
+        Hello, ${name}!
+      </h2>
+      <p
+        style="
+          color: #555;
+          font-size: 16px;
+          line-height: 1.6;
+          margin-bottom: 20px;
+        "
+      >
+        Your account has been
+        <strong style="color: #d9534f">deactivated</strong>. This means you will
+        no longer be able to access its features or services.
+      </p>
+
+      <!-- Additional Info -->
+      <p
+        style="color: #666; font-size: 14px; margin-top: 20px; line-height: 1.5"
+      >
+        If you no longer wish to keep your account, no further action is needed.
+        If you have any concerns, please
+        <a href="[Support Link]" style="color: #6c63ff; text-decoration: none"
+          >contact our support team</a
+        >.
+      </p>
+
+      <!-- Footer -->
+      <div style="margin-top: 30px; font-size: 12px; color: #888">
+        &copy; 2025 True Self. All Rights Reserved.
+      </div>
+    </div>
+  </body>
+</html>
+`;
+
+  const mailOptions = {
+    from: process.env.GOOGLE_EMAIL,
+    to: email,
+    subject: "Account Deactivated",
+    html: htmlTemplate,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent:", info.response);
+    return info;
+  } catch (error) {
+    console.error("❌ Error sending email:", error);
+    throw error;
+  }
+};
+
+const reactivateAccountEmail = async (name, email) => {
+  const htmlTemplate = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account Reactivated</title>
+  </head>
+  <body
+    style="
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    "
+  >
+    <div
+      style="
+        max-width: 600px;
+        margin: 20px auto;
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.08);
+        text-align: center;
+      "
+    >
+      <!-- Logo -->
+      <img
+        src="https://res.cloudinary.com/dco6n59if/image/upload/v1741011690/zsztuvvi6079a2i2k7o2.png"
+        alt="True Self Logo"
+        style="width: 80px; margin-bottom: 15px"
+      />
+
+      <!-- Header -->
+      <h2 style="color: #333; font-size: 22px; margin-bottom: 10px">
+        Hello, ${name}!
+      </h2>
+      <p
+        style="
+          color: #555;
+          font-size: 16px;
+          line-height: 1.6;
+          margin-bottom: 20px;
+        "
+      >
+        Good news! Your account has been
+        <strong style="color: #28a745">successfully reactivated</strong>. You
+        can now access all features and services as usual.
+      </p>
+
+      <!-- Footer -->
+      <div style="margin-top: 30px; font-size: 12px; color: #888">
+        &copy; 2025 True Self. All Rights Reserved.
+      </div>
+    </div>
+  </body>
+</html>
+`;
+
+  const mailOptions = {
+    from: process.env.GOOGLE_EMAIL,
+    to: email,
+    subject: "Account Reactivated",
+    html: htmlTemplate,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent:", info.response);
+    return info;
+  } catch (error) {
+    console.error("❌ Error sending email:", error);
+    throw error;
+  }
+};
+
 module.exports = {
+  reactivateAccountEmail,
+  sendDeactivateEmail,
   sendAdminEmail,
   sendRequestPasswordEmailMobile,
   sendRequestPasswordEmail,

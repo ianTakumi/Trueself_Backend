@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-// Define Schema for Space
 const SpaceSchema = new Schema(
   {
     name: {
@@ -10,6 +9,16 @@ const SpaceSchema = new Schema(
       trim: true,
     },
     description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    mission: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    rules: {
       type: String,
       required: true,
       trim: true,

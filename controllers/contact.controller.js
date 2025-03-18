@@ -1,4 +1,6 @@
 const Contact = require("../models/contact.model");
+const User = require("../models/user.model");
+const Admin = require("../configs/Firebase.config.js");
 
 // Get all contact
 exports.getAllContact = async (req, res) => {
@@ -97,6 +99,25 @@ exports.createContact = async (req, res) => {
     });
 
     await contact.save();
+
+    const user = await User.findOne({ role: "admin" });
+
+    if (user.token) {
+      const fcmMessage = {
+        notification: {
+          title: `New contact from ${name}`,
+          body: `Subject: ${subject}`,
+        },
+        token: user.token,
+      };
+
+      try {
+        await Admin.messaging().send(fcmMessage);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
     res
       .status(201)
       .json({ message: "Contact created", success: true, data: contact });

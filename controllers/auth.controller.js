@@ -15,6 +15,32 @@ const {
 } = require("../configs/nodemailer.config");
 const OTP = require("../models/OTP.model");
 
+// Update Fcm Token
+exports.updateFCMToken = async (req, res) => {
+  try {
+    const { userId, token } = req.body;
+
+    if (!userId || !token) {
+      return res
+        .status(400)
+        .json({ message: "User ID and token are required", success: false });
+    }
+
+    const user = await User.findByIdAndUpdate(userId, { token }, { new: true });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "User not found", success: false });
+    }
+
+    return res.status(200).json({ message: "Token updated", success: true });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: error, success: false });
+  }
+};
+
 // Register a new user
 exports.register = async (req, res) => {
   try {
@@ -171,13 +197,19 @@ exports.verifyEmail = async (req, res) => {
 // Login
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    console.log(req.body);
+    const { email, password, fcmToken } = req.body;
+
+    if (!email || !password || !fcmToken) {
+      return res.status(400).json({
+        message: "Please provide email, password and FCM token",
+        success: false,
+      });
+    }
+
     const normalizedEmail = email.toLowerCase();
 
     const user = await User.findOne({ email: normalizedEmail });
-    console.log(user);
-    // Check if the user exists
+
     if (!user) {
       return res
         .status(404)
@@ -198,6 +230,9 @@ exports.login = async (req, res) => {
         .status(400)
         .json({ message: "Invalid Email or Password", success: false });
     }
+
+    user.token = fcmToken;
+    await user.save();
 
     const token = user.getJwtToken();
     res.status(200).json({ token, success: true, user });

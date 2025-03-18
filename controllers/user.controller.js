@@ -1,7 +1,11 @@
 const User = require("../models/user.model");
 const upload = require("../middlewares/multer.middleware");
 const path = require("path");
-const { sendAdminEmail } = require("../configs/nodemailer.config");
+const {
+  sendAdminEmail,
+  sendDeactivateEmail,
+  reactivateAccountEmail,
+} = require("../configs/nodemailer.config");
 const {
   uploadPic,
   removeFromCloudinary,
@@ -30,6 +34,54 @@ exports.checkUnique = async (req, res) => {
   } catch (err) {
     console.error(err.message);
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Deactvate user
+exports.deactivateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    user.status = "deactivated";
+    await user.save();
+
+    // Send email to user
+    await sendDeactivateEmail(user.name, user.email);
+
+    res.status(200).json({
+      message: "User deactivated successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
+
+// Activate user
+exports.activateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    user.status = "activated";
+    await user.save();
+
+    reactivateAccountEmail(user.name, user.email);
+    res.status(200).json({
+      message: "User activated successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.lo(error);
+    res.status(500).json({
+      message: "Internal server error",
+      success: false,
+    });
   }
 };
 

@@ -31,6 +31,31 @@ exports.getAnxietySeverityTrendForAll = async (req, res) => {
   }
 };
 
+// Function to Calculate Correlation (Pearson's Correlation Coefficient)
+const calculateCorrelation = (data) => {
+  let n = data.length;
+  let sumX = 0,
+    sumY = 0,
+    sumXY = 0,
+    sumX2 = 0,
+    sumY2 = 0;
+
+  data.forEach((d) => {
+    sumX += d.x;
+    sumY += d.y;
+    sumXY += d.x * d.y;
+    sumX2 += d.x * d.x;
+    sumY2 += d.y * d.y;
+  });
+
+  let numerator = n * sumXY - sumX * sumY;
+  let denominator = Math.sqrt(
+    (n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)
+  );
+
+  return denominator === 0 ? 0 : (numerator / denominator).toFixed(3);
+};
+
 exports.getScatterPlotData = async (req, res) => {
   try {
     const data = await AnxietyPrediction.find(
@@ -43,7 +68,33 @@ exports.getScatterPlotData = async (req, res) => {
       y: entry.stressLevel,
     }));
 
-    res.json({ scatterData });
+    // Key Observations and Analysis
+    let totalEntries = scatterData.length;
+    let avgDietQuality =
+      scatterData.reduce((sum, d) => sum + d.x, 0) / totalEntries || 0;
+    let avgStressLevel =
+      scatterData.reduce((sum, d) => sum + d.y, 0) / totalEntries || 0;
+
+    // Correlation Analysis (Basic Insight)
+    let correlation =
+      totalEntries > 1
+        ? calculateCorrelation(scatterData)
+        : "Insufficient data for correlation analysis";
+
+    const analysis = {
+      totalEntries,
+      avgDietQuality: avgDietQuality.toFixed(2),
+      avgStressLevel: avgStressLevel.toFixed(2),
+      correlation,
+      insights:
+        correlation < 0
+          ? "There may be an inverse relationship between diet quality and stress level."
+          : correlation > 0
+          ? "Higher diet quality may be associated with increased stress levels, indicating potential external factors."
+          : "No strong relationship observed between diet quality and stress level.",
+    };
+
+    res.json({ scatterData, analysis });
   } catch (error) {
     console.error("Error fetching scatter plot data:", error);
     res.status(500).json({ message: "Server error" });
@@ -81,6 +132,7 @@ exports.getAnxietyDietData = async (req, res) => {
 exports.getSeverityBySleepHours = async (req, res) => {
   try {
     const sleepRanges = [
+      { range: "1-2", min: 1, max: 2 },
       { range: "3-5", min: 3, max: 5 },
       { range: "6-8", min: 6, max: 8 },
       { range: "9+", min: 9, max: 24 },

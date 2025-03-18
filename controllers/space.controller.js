@@ -4,11 +4,63 @@ const {
   removeFromCloudinary,
 } = require("../configs/cloudinary.config");
 const upload = require("../middlewares/multer.middleware");
+const mongoose = require("mongoose");
 
-// Get top communities
+// Get top 3 spaces
 exports.getTopSpaces = async (req, res) => {
   try {
+    const topSpaces = await Space.find().sort({ members: -1 }).limit(3);
+
+    res.status(200).json({
+      success: true,
+      data: topSpaces,
+    });
   } catch (error) {
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
+// Get other spaces excluding specific IDs
+exports.getOtherSpaces = async (req, res) => {
+  try {
+    const excludedIds = [
+      "67c833d69fdac0bf83ddc589",
+      "67c83855e670d3676c687169",
+      "67c839d7e670d3676c68717b",
+    ].map((id) => new mongoose.Types.ObjectId(id));
+
+    const otherSpaces = await Space.find({ _id: { $nin: excludedIds } }).sort({
+      members: -1,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: otherSpaces,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
+// Get top 5 spaces
+exports.getTop5Spaces = async (req, res) => {
+  try {
+    const top5Spaces = await Space.find()
+      .sort({ members: -1 })
+      .limit(5)
+      .select("name members");
+
+    const formattedData = top5Spaces.map((space) => ({
+      name: space.name,
+      memberCount: space.members.length, // Get the count of members
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: formattedData,
+    });
+  } catch (error) {
+    console.error("Error fetching top spaces:", error);
     res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -70,7 +122,7 @@ exports.createSpace = [
   ]),
   async (req, res) => {
     try {
-      const { name, description } = req.body;
+      const { name, description, mission, rules } = req.body;
       const { userId } = req.params;
       const profileImageObj = req.files["profile"]
         ? req.files["profile"][0]
@@ -79,7 +131,7 @@ exports.createSpace = [
         ? req.files["banner"][0]
         : null;
 
-      if (!name || !description) {
+      if (!name || !description || !mission || !rules) {
         return res
           .status(400)
           .json({ message: "Please fill all fields", success: false });
@@ -108,8 +160,11 @@ exports.createSpace = [
         name,
         description,
         banner,
+        mission,
+        rules,
         profile,
         createdBy: userId,
+        status: "Approved",
       });
 
       const savedSpace = await space.save();
@@ -123,6 +178,54 @@ exports.createSpace = [
     }
   },
 ];
+
+exports.joinSpace = async (req, res) => {
+  try {
+    const { spaceId, userId } = req.params;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(spaceId) ||
+      !mongoose.Types.ObjectId.isValid(userId)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invalid spaceId or userId", success: false });
+    }
+
+    const space = await Space.findById(spaceId);
+
+    if (!space) {
+      return res
+        .status(404)
+        .json({ message: "Space not found", success: false });
+    }
+
+    const restrictedStatuses = ["Rejected", "Suspended", "Archived"];
+    if (restrictedStatuses.includes(space.status)) {
+      return res.status(403).json({
+        message: `Cannot join a ${space.status} space`,
+        success: false,
+      });
+    }
+
+    if (space.members.includes(userId)) {
+      return res
+        .status(400)
+        .json({ message: "User is already a member", success: false });
+    }
+
+    space.members.push(userId);
+    await space.save();
+
+    res.json({
+      message: "Successfully joined space",
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
 
 // Update space
 exports.updateSpace = [

@@ -25,20 +25,20 @@ const PostSchema = new Schema(
       required: true,
     },
     content: {
-      type: String, // React Quill stores HTML content as a string
+      type: String,
       required: function () {
         return this.type === "text";
       },
     },
     video: {
       public_id: {
-        type: String, // Cloudinary public ID for the video
+        type: String,
         required: function () {
           return this.type === "video";
         },
       },
       url: {
-        type: String, // Cloudinary URL for the video
+        type: String,
         required: function () {
           return this.type === "video";
         },
@@ -47,39 +47,66 @@ const PostSchema = new Schema(
     images: [
       {
         public_id: {
-          type: String, // Cloudinary public ID for the image
+          type: String,
           required: true,
         },
         url: {
-          type: String, // Cloudinary URL for the image
+          type: String,
           required: true,
         },
       },
     ],
     pollOptions: [
       {
-        option: { type: String, required: true }, // Poll option text
-        votes: { type: Number, default: 0 }, // Vote count for the option
+        option: { type: String, required: true },
+        votes: { type: Number, default: 0 },
       },
     ],
     linkUrl: {
-      type: String, // URL for the link post
+      type: String,
       required: function () {
         return this.type === "link";
       },
     },
-    likes: [
+    likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    dislikes: [{ type: Schema.Types.ObjectId, ref: "User" }],
+
+    comments: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "User",
+        user: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        text: {
+          type: String,
+          required: true,
+        },
+        likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
+        dislikes: [{ type: Schema.Types.ObjectId, ref: "User" }], // ✅ Add dislikes
+        replies: [
+          {
+            user: {
+              type: Schema.Types.ObjectId,
+              ref: "User",
+              required: true,
+            },
+            text: {
+              type: String,
+              required: true,
+            },
+            likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
+            dislikes: [{ type: Schema.Types.ObjectId, ref: "User" }],
+            createdAt: { type: Date, default: Date.now },
+          },
+        ],
+        createdAt: { type: Date, default: Date.now },
       },
     ],
-    dislikes: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
+    isArchieved: {
+      type: Boolean,
+      default: false,
+    },
   },
   { collection: "posts", timestamps: true }
 );

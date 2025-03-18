@@ -22,6 +22,7 @@
     "dotenv": "^16.4.7",
     "elevenlabs-js": "^1.2.6",
     "express": "^4.21.2",
+    "firebase-admin": "^13.2.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.5",
     "morgan": "^1.10.0",

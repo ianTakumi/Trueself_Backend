@@ -17,6 +17,8 @@ const contactRoutes = require("./routes/contact.routes");
 const anxietyPreditionRoutes = require("./routes/anxietyPrediction.routes");
 const facebookRoutes = require("./routes/facebook-auth.routes");
 const journalEntryRoutes = require("./routes/JournalEntry.routes");
+const ReportRoutes = require("./routes/Report.routes");
+const CommentRoutes = require("./routes/Comment.routes");
 
 // Initializing express
 const app = express();
@@ -38,6 +40,8 @@ app.use("/api/v1/contacts", contactRoutes);
 app.use("/api/v1/anxietyPredictions", anxietyPreditionRoutes);
 app.use("/api/v1/facebook", facebookRoutes);
 app.use("/api/v1/journalEntries", journalEntryRoutes);
+app.use("/api/v1/reports", ReportRoutes);
+app.use("/api/v1/comments", CommentRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URL)

@@ -5,6 +5,12 @@ const router = express.Router();
 // Get all users
 router.get("/", userController.getAllUsers);
 
+// Deactivate user
+router.put("/deactivate/:userId", userController.deactivateUser);
+
+// Activate user
+router.put("/activate/:userId", userController.activateUser);
+
 // Get user count
 router.get("/count", userController.getUserCount);
 

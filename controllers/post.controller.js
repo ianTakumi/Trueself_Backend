@@ -1,6 +1,10 @@
 const Post = require("../models/post.model");
 const upload = require("../middlewares/multer.middleware");
-const { uploadPic, uploadVideo } = require("../configs/cloudinary.config");
+const {
+  uploadPic,
+  uploadVideo,
+  removeFromCloudinary,
+} = require("../configs/cloudinary.config");
 
 // Get all post based on USER ID
 exports.getPostBasedOnUserID = async (req, res) => {
@@ -16,11 +20,36 @@ exports.getPostBasedOnUserID = async (req, res) => {
   }
 };
 
+// Get a single post
+exports.getSinglePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const post = await Post.findById(postId).populate("user");
+
+    if (!post) {
+      return res
+        .status(404)
+        .json({ message: "Post not found", success: false });
+    }
+
+    res.status(200).json({
+      data: post,
+      message: "Successfully fetch post",
+      success: true,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
+// Get all post based on COMMUNITY ID
 exports.getPostBasedOnCommunity = async (req, res) => {
   try {
     const { communityId } = req.params;
     const posts = await Post.find({
       communityId,
+      isArchieved: false,
     }).populate("user");
 
     res.status(200).json({
@@ -98,6 +127,7 @@ exports.createPost = [
         user: userId,
         title: title,
         type,
+        likes: [userId],
         content: type === "text" ? content : undefined,
         video: type === "video" ? video : undefined,
         images: type === "image" ? images : undefined,
@@ -122,7 +152,9 @@ exports.createPost = [
 // Like a post
 exports.likePost = async (req, res) => {
   try {
-    const { postId, userId } = req.params;
+    const { postId } = req.params;
+    const { userId } = req.body;
+
     const post = await Post.findById(postId);
 
     if (!post) {
@@ -131,15 +163,29 @@ exports.likePost = async (req, res) => {
         .json({ message: "Post not found", success: false });
     }
 
-    post.likes.push(req.user._id);
+    // Check if user has already liked the post
+    if (post.likes.includes(userId)) {
+      return res
+        .status(400)
+        .json({ message: "You have already liked this post", success: false });
+    }
+
+    // Remove user from dislikes if they have previously disliked the post
+    post.dislikes = post.dislikes.filter((id) => id.toString() !== userId);
+
+    // Add user to likes
+    post.likes.push(userId);
+
     await post.save();
 
     res.status(200).json({
       message: "Successfully liked post",
       success: true,
-      data: post,
+      likesCount: post.likes.length,
+      dislikesCount: post.dislikes.length,
     });
   } catch (error) {
+    console.log("Error liking post:", error);
     res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -148,6 +194,8 @@ exports.likePost = async (req, res) => {
 exports.dislikePost = async (req, res) => {
   try {
     const { postId } = req.params;
+    const { userId } = req.body;
+
     const post = await Post.findById(postId);
 
     if (!post) {
@@ -156,9 +204,12 @@ exports.dislikePost = async (req, res) => {
         .json({ message: "Post not found", success: false });
     }
 
-    const index = post.likes.indexOf(req.user._id);
-    if (index > -1) {
-      post.likes.splice(index, 1);
+    // Remove from likes if the user has already liked the post
+    post.likes = post.likes.filter((id) => id.toString() !== userId);
+
+    // Check if the user has already disliked the post
+    if (!post.dislikes.includes(userId)) {
+      post.dislikes.push(userId);
     }
 
     await post.save();
@@ -169,6 +220,7 @@ exports.dislikePost = async (req, res) => {
       data: post,
     });
   } catch (error) {
+    console.log("Error disliking post:", error);
     res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -187,16 +239,32 @@ exports.updatePost = async (req, res) => {
 exports.deletePost = async (req, res) => {
   try {
     const { postId } = req.params;
-    const post = await Post.findById(postId);
+    let post = await Post.findById(postId);
+
     if (!post) {
       return res
         .status(404)
         .json({ message: "Post not found", success: false });
     }
 
-    if (post.type === "video") {
+    // Archive the post first
+    post.isArchieved = true;
+    await post.save(); // Ensure update is saved
+
+    if (post.type === "image" && post.images.length) {
+      await Promise.all(
+        post.images.map((image) => removeFromCloudinary(image.public_id))
+      );
+    } else if (post.type === "video" && post.video) {
+      await removeFromCloudinary(post.video.public_id);
     }
+
+    return res.status(200).json({
+      message: "Successfully archived post",
+      success: true,
+    });
   } catch (error) {
+    console.error("Error deleting post:", error);
     res.status(500).json({ message: error.message, success: false });
   }
 };

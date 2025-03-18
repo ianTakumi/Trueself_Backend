@@ -9,6 +9,14 @@ router.get("/", spaceController.getSpaces);
 // Get space count
 router.get("/count", spaceController.getSpaceCount);
 
+// Get top communities
+router.get("/top", spaceController.getTopSpaces);
+
+// Join space
+router.get("/join/:spaceId/:userId", spaceController.joinSpace);
+
+router.get("/others", spaceController.getOtherSpaces);
+
 // Get space by id
 router.get("/:spaceId", spaceController.getSpaceById);
 
