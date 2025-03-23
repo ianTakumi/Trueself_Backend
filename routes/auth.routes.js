@@ -21,6 +21,9 @@ router.get("/verifyEmail/:token", authController.verifyEmail);
 // Login
 router.post("/login", authController.login);
 
+// Mobile login
+router.post("/loginMobile", authController.loginMobile);
+
 // Change password
 router.put("/changePassword/:userId", authController.changePassword);
 

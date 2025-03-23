@@ -8,6 +8,9 @@ router.get("/:postId", CommentController.findAll);
 // Create comment
 router.post("/:userId/:postId", CommentController.create);
 
+// Create reply
+router.post("/:userId/:postId/:parentCommentId", CommentController.createReply);
+
 // Update comment
 router.put("/:commentId", CommentController.update);
 

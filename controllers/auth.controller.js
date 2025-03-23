@@ -206,11 +206,19 @@ exports.login = async (req, res) => {
       });
     }
 
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Please provide email, password and FCM token",
+        success: false,
+      });
+    }
+
     const normalizedEmail = email.toLowerCase();
 
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
+      console.log("User not found");
       return res
         .status(404)
         .json({ message: "Invalid Email or Password", success: false });
@@ -242,6 +250,49 @@ exports.login = async (req, res) => {
   }
 };
 
+// Login mobile
+exports.loginMobile = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Please provide email and password",
+        success: false,
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "Invalid Email or Password", success: false });
+    }
+
+    if (user.status === "unverified") {
+      return res
+        .status(400)
+        .json({ message: "Please verify your email", success: false });
+    }
+
+    // Check if password is correct
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      console.log("Password is incorrect");
+      return res
+        .status(400)
+        .json({ message: "Invalid Email or Password", success: false });
+    }
+
+    const token = user.getJwtToken();
+    res.status(200).json({ token, success: true, user });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: error, success: false });
+  }
+};
 // Reset password request
 exports.resetPasswordRequest = async (req, res) => {
   try {

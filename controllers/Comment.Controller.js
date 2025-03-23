@@ -5,7 +5,7 @@ exports.findAll = async (req, res) => {
   try {
     const { postId } = req.params;
 
-    await Comment.find({ post: postId });
+    const comments = await Comment.find({ post: postId }).populate("user");
 
     res.status(200).send({ message: "Comments found", data: comments });
   } catch (error) {
@@ -19,9 +19,12 @@ exports.create = async (req, res) => {
   try {
     const { userId, postId } = req.params;
     const { content } = req.body;
+    console.log(req.params);
 
-    if (!userId || postId) {
-      res.status(400).json({ message: "User ID and Post ID are required" });
+    if (!userId || !postId) {
+      return res
+        .status(400)
+        .json({ message: "User ID and Post ID are required" });
     }
 
     const comment = new Comment({
@@ -33,6 +36,34 @@ exports.create = async (req, res) => {
     await comment.save();
 
     res.status(201).send({ message: "Comment created", data: comment });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: error.message });
+  }
+};
+
+// Create reply
+exports.createReply = async (req, res) => {
+  try {
+    const { userId, postId, parentCommentId } = req.params;
+    const { content } = req.body;
+
+    if (!userId || !postId || !parentCommentId) {
+      return res.status(400).json({
+        message: "User ID, Post ID, and Parent Comment ID are required",
+      });
+    }
+
+    const comment = new Comment({
+      user: userId,
+      post: postId,
+      parentComment: parentCommentId,
+      content,
+    });
+
+    await comment.save();
+
+    res.status(201).send({ message: "Reply created", data: comment });
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: error.message });
@@ -64,14 +95,27 @@ exports.delete = async (req, res) => {
     const { commentId } = req.params;
 
     if (!commentId) {
-      res.status(400).json({ message: "Comment ID is required" });
+      return res.status(400).json({ message: "Comment ID is required" });
     }
 
-    await Comment.findByIdAndDelete(commentId);
+    // Recursively delete all child comments
+    const deleteCommentAndChildren = async (commentId) => {
+      // Find all child comments
+      const childComments = await Comment.find({ parentComment: commentId });
 
-    res.status(200).send({ message: "Comment deleted" });
+      for (const child of childComments) {
+        await deleteCommentAndChildren(child._id); // Recursive call for nested children
+      }
+
+      // Delete the parent comment
+      await Comment.findByIdAndDelete(commentId);
+    };
+
+    await deleteCommentAndChildren(commentId);
+
+    res.status(200).json({ message: "Comment and its replies deleted" });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };

@@ -11,7 +11,7 @@ const PostSchema = new Schema(
     },
     communityId: {
       type: Schema.Types.ObjectId,
-      ref: "Community",
+      ref: "Space",
       required: true,
     },
     title: {

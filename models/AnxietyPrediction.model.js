@@ -8,6 +8,7 @@ const AnxietyPredictionSchema = new Schema(
       required: [true, "User id is required"],
     },
     severityScore: {
+      // 1-10
       type: Number,
       required: [true, "Severity score is required"],
     },
@@ -20,14 +21,17 @@ const AnxietyPredictionSchema = new Schema(
       required: [true, "Sleep hours is required"],
     },
     physicalActivity: {
+      // Minutes of exercise per week
       type: Number,
       required: [true, "Physical activity is required"],
     },
     caffeeineIntake: {
+      //  in mg
       type: Number,
       required: [true, "Caffeine intake is required"],
     },
     alcoholConsumption: {
+      // In bottles or glasses per week
       type: Number,
       required: [true, "Alcohol consumption is required"],
     },
@@ -40,6 +44,7 @@ const AnxietyPredictionSchema = new Schema(
       required: [true, "Family history is required"],
     },
     stressLevel: {
+      // 1- 10
       type: Number,
       required: [true, "Stress level is required"],
     },
@@ -52,6 +57,7 @@ const AnxietyPredictionSchema = new Schema(
       required: [true, "Breathing rate is required"],
     },
     sweatingLevel: {
+      // 1-5
       type: Number,
       required: [true, "Sweating level is required"],
     },
@@ -72,6 +78,7 @@ const AnxietyPredictionSchema = new Schema(
       required: [true, "Recent major life event is required"],
     },
     dietQuality: {
+      // 1 - 10
       type: Number,
       required: [true, "Diet quality is required"],
     },

@@ -14,7 +14,7 @@ const ContactSchema = new Schema(
       required: [true, "Email is required!"],
       trim: true,
       maxlength: 255,
-      match: [/\S+@\S+\.\S+/, "Email format is invalid"], // Validate email format
+      match: [/\S+@\S+\.\S+/, "Email format is invalid"],
     },
     phone: {
       type: String,

@@ -5,6 +5,9 @@ const {
   uploadVideo,
   removeFromCloudinary,
 } = require("../configs/cloudinary.config");
+const Space = require("../models/space.model");
+const User = require("../models/user.model");
+const Admin = require("../configs/Firebase.config.js");
 
 // Get all post based on USER ID
 exports.getPostBasedOnUserID = async (req, res) => {
@@ -24,7 +27,7 @@ exports.getPostBasedOnUserID = async (req, res) => {
 exports.getSinglePost = async (req, res) => {
   try {
     const { postId } = req.params;
-    const post = await Post.findById(postId).populate("user");
+    const post = await Post.findById(postId).populate("user communityId");
 
     if (!post) {
       return res
@@ -137,6 +140,31 @@ exports.createPost = [
 
       await post.save();
 
+      const space = await Space.findById(id);
+
+      if (space.members) {
+        const members = await User.find({ _id: { $in: space.members } });
+        const fcmMessages = members
+          .filter((member) => member.token && member._id.toString() !== userId)
+          .map((member) => ({
+            notification: {
+              title: `New post in ${space.name}`,
+              body: `${post.title}`,
+            },
+            token: member.token,
+          }));
+
+        try {
+          console.log("🟢 Before sending FCM:", new Date().toISOString());
+          await Promise.all(
+            fcmMessages.map((message) => Admin.messaging().send(message))
+          );
+          console.log("🔵 After sending FCM:", new Date().toISOString());
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
       return res.status(201).json({
         message: "Successfully created post",
         success: true,
@@ -178,6 +206,25 @@ exports.likePost = async (req, res) => {
 
     await post.save();
 
+    const owner = await User.findById(post.user);
+    const userLiker = await User.findById(userId);
+    if (owner.token && userLiker.token) {
+      const fcmMessage = {
+        notification: {
+          title: `New like on your post`,
+          body: `${userLiker.name} liked your post`,
+        },
+        token: owner.token,
+      };
+
+      try {
+        console.log("🟢 Before sending FCM:", new Date().toISOString());
+        await Admin.messaging().send(fcmMessage);
+        console.log("🔵 After sending FCM:", new Date().toISOString());
+      } catch (error) {
+        console.log(error);
+      }
+    }
     res.status(200).json({
       message: "Successfully liked post",
       success: true,
@@ -214,6 +261,25 @@ exports.dislikePost = async (req, res) => {
 
     await post.save();
 
+    const owner = await User.findById(post.user);
+    const userLiker = await User.findById(userId);
+
+    if (owner.token && userLiker.token) {
+      console.log("Sending FCM message");
+      const fcmMessage = {
+        notification: {
+          title: `New dislike on your post`,
+          body: `${userLiker.name} disliked your post`,
+        },
+        token: owner.token,
+      };
+
+      try {
+        await Admin.messaging().send(fcmMessage);
+      } catch (error) {
+        console.log(error);
+      }
+    }
     res.status(200).json({
       message: "Successfully disliked post",
       success: true,
