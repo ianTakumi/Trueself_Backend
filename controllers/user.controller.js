@@ -242,6 +242,7 @@ exports.updateProfilePicture = [
           .json({ message: "User not found", success: false });
       }
 
+      console.log(req.file);
       let profile;
       if (req.file) {
         const result = await uploadPic(req.file, "users");
@@ -262,6 +263,7 @@ exports.updateProfilePicture = [
 
       await user.save();
 
+      // console.log(user);
       res
         .status(200)
         .json({ message: "Profile picture updated", success: true, user });

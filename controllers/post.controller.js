@@ -8,14 +8,41 @@ const {
 const Space = require("../models/space.model");
 const User = require("../models/user.model");
 const Admin = require("../configs/Firebase.config.js");
+const Comment = require("../models/Comment.Model");
 
 // Get all post based on USER ID
 exports.getPostBasedOnUserID = async (req, res) => {
+  const { userId } = req.params;
   try {
-    const posts = await Post.find({ userId: req.params.userId });
+    const posts = await Post.find({
+      user: userId,
+      $or: [{ isArchieved: false }, { isArchieved: { $exists: false } }],
+    })
+      .populate("user communityId")
+      .lean();
+
+    // Fetch comment count for each post
+    const postIds = posts.map((post) => post._id);
+    const commentsCount = await Comment.aggregate([
+      { $match: { post: { $in: postIds } } },
+      { $group: { _id: "$post", count: { $sum: 1 } } },
+    ]);
+
+    // Convert comment count array into a map for quick lookup
+    const commentsCountMap = commentsCount.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+
+    // Attach comment count to each post
+    const postsWithCommentCount = posts.map((post) => ({
+      ...post,
+      commentCount: commentsCountMap[post._id] || 0,
+    }));
+
     res.status(200).json({
-      data: posts,
-      message: "Successfully fetch posts",
+      data: postsWithCommentCount,
+      message: "Successfully fetched posts",
       success: true,
     });
   } catch (error) {
