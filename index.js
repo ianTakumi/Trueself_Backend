@@ -4,7 +4,6 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
-const passport = require("./configs/passport.config");
 
 // Importing routes
 const userRoutes = require("./routes/user.routes");
@@ -15,7 +14,6 @@ const authRoutes = require("./routes/auth.routes");
 const moodEntryRoutes = require("./routes/moodEntry.routes");
 const contactRoutes = require("./routes/contact.routes");
 const anxietyPreditionRoutes = require("./routes/anxietyPrediction.routes");
-const facebookRoutes = require("./routes/facebook-auth.routes");
 const journalEntryRoutes = require("./routes/JournalEntry.routes");
 const ReportRoutes = require("./routes/Report.routes");
 const CommentRoutes = require("./routes/Comment.routes");
@@ -27,7 +25,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
-app.use(passport.initialize());
 
 // Routes
 app.use("/api/v1/users", userRoutes);
@@ -38,7 +35,6 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/moodEntries", moodEntryRoutes);
 app.use("/api/v1/contacts", contactRoutes);
 app.use("/api/v1/anxietyPredictions", anxietyPreditionRoutes);
-app.use("/api/v1/facebook", facebookRoutes);
 app.use("/api/v1/journalEntries", journalEntryRoutes);
 app.use("/api/v1/reports", ReportRoutes);
 app.use("/api/v1/comments", CommentRoutes);

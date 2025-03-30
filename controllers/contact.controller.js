@@ -2,16 +2,16 @@ const Contact = require("../models/contact.model");
 const User = require("../models/user.model");
 const Admin = require("../configs/Firebase.config.js");
 
-// Get all contact
+// Get all contacts
 exports.getAllContact = async (req, res) => {
   try {
-    const contacts = await Contact.find();
+    const contacts = await Contact.find().sort({ createdAt: -1 }); // Sorts by newest first
     res
       .status(200)
       .json({ message: "All contacts", success: true, data: contacts });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: error, success: false });
+    return res.status(500).json({ message: error.message, success: false });
   }
 };
 

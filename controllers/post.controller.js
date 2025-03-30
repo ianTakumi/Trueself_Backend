@@ -62,8 +62,13 @@ exports.getSinglePost = async (req, res) => {
         .json({ message: "Post not found", success: false });
     }
 
+    const commentCount = await Comment.countDocuments({ postId });
+
     res.status(200).json({
-      data: post,
+      data: {
+        ...post.toObject(), // Convert Mongoose document to plain object
+        commentCount, // Add the comment count inside the data object
+      },
       message: "Successfully fetch post",
       success: true,
     });
@@ -77,14 +82,27 @@ exports.getSinglePost = async (req, res) => {
 exports.getPostBasedOnCommunity = async (req, res) => {
   try {
     const { communityId } = req.params;
+
+    // Fetch posts for the given community
     const posts = await Post.find({
       communityId,
       isArchieved: false,
     }).populate("user");
 
+    // Fetch comment counts for each post
+    const postsWithCommentCount = await Promise.all(
+      posts.map(async (post) => {
+        const commentCount = await Comment.countDocuments({ post: post._id });
+        return {
+          ...post.toObject(),
+          commentCount,
+        };
+      })
+    );
+
     res.status(200).json({
-      data: posts,
-      message: "Successfully fetch posts",
+      data: postsWithCommentCount,
+      message: "Successfully fetched posts with comment count",
       success: true,
     });
   } catch (error) {
@@ -264,6 +282,45 @@ exports.likePost = async (req, res) => {
   }
 };
 
+// Like post mobile
+exports.likePostMobile = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.body;
+
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res
+        .status(404)
+        .json({ message: "Post not found", success: false });
+    }
+
+    // Check if user has already liked the post
+    if (post.likes.includes(userId)) {
+      return res
+        .status(400)
+        .json({ message: "You have already liked this post", success: false });
+    }
+
+    // Remove user from dislikes if they have previously disliked the post
+    post.dislikes = post.dislikes.filter((id) => id.toString() !== userId);
+
+    // Add user to likes
+    post.likes.push(userId);
+
+    await post.save();
+
+    res.status(200).json({
+      message: "Successfully liked post",
+      success: true,
+    });
+  } catch (error) {
+    console.log("Error liking post:", error);
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 // Dislike a post
 exports.dislikePost = async (req, res) => {
   try {
@@ -318,11 +375,64 @@ exports.dislikePost = async (req, res) => {
   }
 };
 
+// Dislike post mobile
+exports.dislikePostMobile = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.body;
+
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res
+        .status(404)
+        .json({ message: "Post not found", success: false });
+    }
+
+    // Remove from likes if the user has already liked the post
+    post.likes = post.likes.filter((id) => id.toString() !== userId);
+
+    // Check if the user has already disliked the post
+    if (!post.dislikes.includes(userId)) {
+      post.dislikes.push(userId);
+    }
+
+    await post.save();
+  } catch (error) {
+    console.log("Error disliking post:", error);
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 // Update post
 exports.updatePost = async (req, res) => {
   try {
     const { userId } = req.params;
     const { title, content } = req.body;
+
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res
+        .status(404)
+        .json({ message: "Post not found", success: false });
+    }
+
+    // Remove from likes if the user has already liked the post
+    post.likes = post.likes.filter((id) => id.toString() !== userId);
+
+    // Check if the user has already disliked the post
+    if (!post.dislikes.includes(userId)) {
+      post.dislikes.push(userId);
+    }
+
+    await post.save();
+
+    res.status(200).json({
+      message: "Successfully disliked post",
+      success: true,
+      data: post,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message, success: false });
   }

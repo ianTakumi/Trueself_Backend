@@ -170,6 +170,11 @@ exports.getMoodPerMonthBasedOnUserId = async (req, res) => {
     const { userId } = req.params;
     const objectIdUser = new mongoose.Types.ObjectId(userId.toString());
 
+    // Count the total number of mood entries for the user
+    const totalMoodEntries = await MoodEntry.countDocuments({
+      user: objectIdUser,
+    });
+
     const moodEntries = await MoodEntry.aggregate([
       {
         $match: {
@@ -213,7 +218,11 @@ exports.getMoodPerMonthBasedOnUserId = async (req, res) => {
       });
     }
 
-    res.status(200).json({ moodsPerMonth: moodEntries, success: true });
+    res.status(200).json({
+      moodsPerMonth: moodEntries,
+      totalMoodEntries,
+      success: true,
+    });
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: error.message, success: false });
@@ -283,7 +292,6 @@ exports.getMostFrequentMoodPerDay = async (req, res) => {
       count: entry.moodCount,
     }));
 
-    console.log(result);
     return res.status(200).json(result);
   } catch (error) {
     console.error("Error in getting most frequent mood per day:", error);
@@ -360,7 +368,6 @@ exports.updateMoodEntry = async (req, res) => {
 exports.deleteMoodEntry = async (req, res) => {
   try {
     const { moodEntryId, userId } = req.params;
-    console.log(req.params);
     const moodEntry = await MoodEntry.findById(moodEntryId);
 
     if (!moodEntry) {
@@ -387,5 +394,188 @@ exports.deleteMoodEntry = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: error.message, success: false });
+  }
+};
+
+// Get mood distribution for admin
+exports.getMoodDistribution = async (req, res) => {
+  try {
+    const moodData = await MoodEntry.aggregate([
+      {
+        $group: {
+          _id: "$mood",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          mood: "$_id",
+          count: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      message: "Successfully fetched mood distribution",
+      success: true,
+      data: moodData,
+    });
+  } catch (error) {
+    console.error("Error fetching mood distribution:", error);
+    res.status(500).json({
+      message: "Error fetching mood distribution",
+      success: false,
+    });
+  }
+};
+
+exports.getMoodPerMonthForAllUsers = async (req, res) => {
+  try {
+    const moodEntries = await MoodEntry.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date("2025-01-01T00:00:00.000Z"),
+            $lt: new Date("2026-01-01T00:00:00.000Z"),
+          },
+        },
+      },
+      {
+        $project: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
+          mood: 1,
+        },
+      },
+      {
+        $group: {
+          _id: { year: "$year", month: "$month", mood: "$mood" },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $group: {
+          _id: { year: "$_id.year", month: "$_id.month" },
+          moods: {
+            $push: { mood: "$_id.mood", count: "$count" },
+          },
+        },
+      },
+      {
+        $sort: { "_id.year": 1, "_id.month": 1 },
+      },
+    ]);
+
+    if (moodEntries.length === 0) {
+      return res.status(404).json({
+        message: "No mood entries found for 2025.",
+        success: false,
+      });
+    }
+
+    res.status(200).json({
+      data: moodEntries,
+      message: "Sucessfully fetch data",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
+const calculateMoodStreak = async (userId) => {
+  const moodEntries = await MoodEntry.find({ user: userId })
+    .sort({ createdAt: -1 })
+    .select("createdAt");
+
+  if (moodEntries.length === 0) return 0;
+
+  let streak = 1;
+  let uniqueDays = new Set();
+
+  let today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to midnight
+
+  // 🎯 Ensure the week starts on **Sunday**
+  let startOfWeek = new Date(today);
+  let dayOffset = today.getDay(); // Get current day (0 = Sunday, 6 = Saturday)
+  startOfWeek.setDate(today.getDate() - dayOffset); // Move back to Sunday
+  startOfWeek.setHours(0, 0, 0, 0); // Reset time
+
+  console.log(
+    `📅 This week's range: ${startOfWeek.toDateString()} - ${today.toDateString()}`
+  );
+
+  let prevDate = new Date(moodEntries[0].createdAt);
+  prevDate.setHours(0, 0, 0, 0); // Normalize to midnight
+
+  // 🚨 Ignore future entries
+  if (prevDate > today) {
+    console.log(`⛔ Most recent entry is in the future. Ignoring.`);
+    return 0;
+  }
+
+  // 🚨 Ignore entries before this week
+  if (prevDate < startOfWeek) {
+    console.log(`⛔ No entries this week. Streak reset.`);
+    return 0;
+  }
+
+  uniqueDays.add(prevDate.getTime());
+
+  console.log(`User ${userId} Mood Entries:`);
+
+  for (let i = 1; i < moodEntries.length; i++) {
+    let currentDate = new Date(moodEntries[i].createdAt);
+    currentDate.setHours(0, 0, 0, 0);
+
+    // 🚨 Ignore future entries
+    if (currentDate > today) continue;
+
+    // 🚨 Ignore entries from past weeks
+    if (currentDate < startOfWeek) break;
+
+    // ✅ Ignore duplicate entries on the same day
+    if (uniqueDays.has(currentDate.getTime())) continue;
+
+    uniqueDays.add(currentDate.getTime());
+
+    console.log(`Entry ${i}: ${currentDate.toDateString()}`);
+
+    // 🔥 Check if it's a consecutive day
+    if (prevDate.getTime() - currentDate.getTime() === 86400000) {
+      streak++;
+      console.log(`✅ Streak continues: ${streak} days`);
+    } else {
+      console.log(`⛔ Streak broken at ${currentDate.toDateString()}`);
+      break;
+    }
+
+    prevDate = currentDate;
+  }
+
+  console.log(`🔥 Final Streak This Week: ${streak} days\n`);
+  return streak;
+};
+
+exports.getMoodStreak = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const streak = await calculateMoodStreak(userId);
+
+    console.log("Streak:", streak);
+    res.status(200).json({
+      message: "Successfully fetched mood streak",
+      success: true,
+      streak,
+    });
+  } catch (err) {
+    console.error("Error fetching mood streak:", err);
+    res.status(500).json({
+      message: "Error fetching mood streak",
+      success: false,
+    });
   }
 };

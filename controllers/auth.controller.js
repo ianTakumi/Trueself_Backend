@@ -253,7 +253,7 @@ exports.login = async (req, res) => {
 // Login mobile
 exports.loginMobile = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, expoPushToken } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -287,6 +287,9 @@ exports.loginMobile = async (req, res) => {
     }
 
     const token = user.getJwtToken();
+
+    user.expoPushToken = expoPushToken;
+    await user.save();
     res.status(200).json({ token, success: true, user });
   } catch (error) {
     console.log(error);

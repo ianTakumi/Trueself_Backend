@@ -264,7 +264,7 @@ exports.getAllPredictions = async (req, res) => {
 // Get all prediction based on user id
 exports.getAllPredictionsByUserID = async (req, res) => {
   const { userId } = req.params;
-
+  console.log(userId);
   try {
     const predictions = await AnxietyPrediction.find({
       userId: { $eq: userId.trim() },

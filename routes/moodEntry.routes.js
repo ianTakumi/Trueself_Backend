@@ -5,6 +5,15 @@ const moodEntryController = require("../controllers/moodEntry.controller");
 // Get mood stats per week for admin
 router.get("/moodStatsByWeek", moodEntryController.getMoodStatsByMonthWeek);
 
+// Get mood distribution for admin
+router.get("/moodDistribution", moodEntryController.getMoodDistribution);
+
+// Get mood trends for admin
+router.get("/moodTrends", moodEntryController.getMoodPerMonthForAllUsers);
+
+// Get mood streak for user
+router.get("/moodStreak/:userId", moodEntryController.getMoodStreak);
+
 // Get mood per month based on userId (Move this above)
 router.get(
   "/moodPerMonth/:userId",

@@ -14,8 +14,14 @@ router.get("/community/:communityId", postController.getPostBasedOnCommunity);
 //Like post
 router.post("/like/:postId", postController.likePost);
 
+// Like post mobile
+router.post("/likeMobile/:postId", postController.likePostMobile);
+
 // Dislike post
 router.post("/dislike/:postId", postController.dislikePost);
+
+// Dislike post mobile
+router.post("/dislikeMobile/:postId", postController.dislikePostMobile);
 
 //Create a new post
 router.post("/:userId", postController.createPost);

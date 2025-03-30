@@ -124,7 +124,11 @@ const UserSchema = new Schema(
     // Fcm token
     token: {
       type: String,
-      default: null, // You can set a default value if needed
+      default: null,
+    },
+    expoPushToken: {
+      type: String,
+      default: null,
     },
     password: {
       type: String,
