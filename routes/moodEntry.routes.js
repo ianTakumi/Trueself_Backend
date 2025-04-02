@@ -12,7 +12,7 @@ router.get("/moodDistribution", moodEntryController.getMoodDistribution);
 router.get("/moodTrends", moodEntryController.getMoodPerMonthForAllUsers);
 
 // Get mood streak for user
-router.get("/moodStreak/:userId", moodEntryController.getMoodStreak);
+router.get("/moodStreak/:userId", moodEntryController.getMoodWeekStatus);
 
 // Get mood per month based on userId (Move this above)
 router.get(

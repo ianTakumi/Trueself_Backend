@@ -38,6 +38,15 @@ const ReportSchema = new Schema({
     enum: ["Pending", "Reviewed", "Resolved"],
     default: "Pending",
   },
+  adminResponse: {
+    type: String,
+    maxlength: 500,
+  },
+  actionTaken: {
+    type: String,
+    enum: ["None", "Post Deleted", "Comment Deleted", "User Deactivated"],
+    default: "None",
+  },
   createdAt: {
     type: Date,
     default: Date.now,

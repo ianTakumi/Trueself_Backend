@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const postController = require("../controllers/post.controller");
 
+// Get all posts
+router.get("/", postController.getAllPosts);
+
 //Get all post based on user id
 router.get("/:userId", postController.getPostBasedOnUserID);
 

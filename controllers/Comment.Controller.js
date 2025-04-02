@@ -19,7 +19,6 @@ exports.create = async (req, res) => {
   try {
     const { userId, postId } = req.params;
     const { content } = req.body;
-    console.log(req.params);
 
     if (!userId || !postId) {
       return res

@@ -1,11 +1,20 @@
 const Report = require("../models/Report.model");
 const User = require("../models/user.model");
 const Admin = require("../configs/Firebase.config.js");
+const Post = require("../models/post.model");
+const Comment = require("../models/Comment.Model.js");
 
 // Get all report
 exports.getAllReports = async (req, res) => {
   try {
-    const reports = await Report.find();
+    const reports = await Report.find()
+      .populate("reporter")
+      .populate({
+        path: "reportedItem",
+        populate: {
+          path: "user", // Populating the `user` inside `reportedItem`
+        },
+      });
 
     res
       .status(200)
@@ -80,9 +89,38 @@ exports.createReport = async (req, res) => {
 // Update a report
 exports.updateReport = async (req, res) => {
   try {
-    const { reportId, status } = req.body;
+    const { reportId } = req.params;
+    const { reportStatus, actionTaken } = req.body;
 
-    await Report.findByIdAndUpdate(reportId, { status }, { new: true });
+    if (!reportId || !reportStatus || !actionTaken) {
+      return res.status(400).json({
+        message: "Report ID, status, and action taken are required",
+        success: false,
+      });
+    }
+
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return res
+        .status(404)
+        .json({ message: "Report not found", success: false });
+    }
+
+    if (actionTaken === "Post Deleted") {
+      await Post.findByIdAndDelete(report.reportedItem.post);
+    } else if (actionTaken === "Comment Deleted") {
+      await Comment.findByIdAndDelete(report.reportedItem.comment);
+    } else if (actionTaken === "User Deactivated") {
+      await User.findByIdAndUpdate(report.reportedItem.user, {
+        status: "deactivated",
+      });
+    }
+
+    await Report.findByIdAndUpdate(
+      reportId,
+      { status: reportStatus, actionTaken },
+      { new: true }
+    );
 
     res.status(200).json({ message: "Report updated", success: true });
   } catch (error) {

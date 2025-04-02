@@ -29,7 +29,10 @@ exports.getOtherSpaces = async (req, res) => {
       "67c839d7e670d3676c68717b",
     ].map((id) => new mongoose.Types.ObjectId(id));
 
-    const otherSpaces = await Space.find({ _id: { $nin: excludedIds } }).sort({
+    const otherSpaces = await Space.find({
+      _id: { $nin: excludedIds },
+      status: { $ne: "Archived" },
+    }).sort({
       members: -1,
     });
 
@@ -68,7 +71,9 @@ exports.getTop5Spaces = async (req, res) => {
 // Get all spaces
 exports.getSpaces = async (req, res) => {
   try {
-    const spaces = await Space.find().populate("createdBy");
+    const spaces = await Space.find({ status: { $ne: "Archived" } }).populate(
+      "createdBy"
+    );
     res.json({
       message: "Successfully fetch spaces",
       success: true,
@@ -310,7 +315,7 @@ exports.updateSpace = [
 exports.deleteSpace = async (req, res) => {
   try {
     const { spaceId } = req.params;
-    const space = await Space.findByIdAndDelete(spaceId);
+    const space = await Space.findById(spaceId);
 
     // Check if space exists
     if (!space) {
@@ -320,13 +325,8 @@ exports.deleteSpace = async (req, res) => {
       });
     }
 
-    if (space.profile?.public_id) {
-      await removeFromCloudinary(space.image.public_id);
-    }
-
-    if (space.banner?.public_id) {
-      await removeFromCloudinary(space.banner.public_id);
-    }
+    space.status = "Archived";
+    await space.save();
 
     res.json({
       message: "Successfully deleted space",

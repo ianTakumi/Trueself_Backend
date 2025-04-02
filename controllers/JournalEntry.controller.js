@@ -120,59 +120,56 @@ exports.deleteJournalEntry = async (req, res) => {
 const calculateJournalStreak = async (userId) => {
   const now = new Date();
   const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setDate(now.getDate() - now.getDay()); // Move to Sunday
   startOfWeek.setHours(0, 0, 0, 0);
 
   const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setDate(startOfWeek.getDate() + 6); // Move to Saturday
   endOfWeek.setHours(23, 59, 59, 999);
 
+  // Fetch journal entries for this week
   const journalEntries = await JournalEntry.find({
     user: userId,
     createdAt: { $gte: startOfWeek, $lte: endOfWeek },
   }).sort({ createdAt: 1 });
-  console.log("Start of Week:", startOfWeek.toISOString());
-  console.log("End of Week:", endOfWeek.toISOString());
-  console.log(
-    "Journal Entries:",
-    journalEntries.map((e) => e.createdAt.toISOString())
-  );
 
-  if (journalEntries.length === 0) return 0;
+  console.log("Journal Entries:", journalEntries.map((e) => e.createdAt.toISOString()));
 
-  let streak = 0;
+  // Create a boolean array for the week (Sunday to Saturday)
+  let streakArray = new Array(7).fill(false);
+
+  // Store unique days with journal entries
   let uniqueDays = new Set();
-
   for (const entry of journalEntries) {
-    const entryDate = new Date(entry.createdAt).setHours(0, 0, 0, 0);
-    uniqueDays.add(entryDate);
+    const entryDate = new Date(entry.createdAt);
+    entryDate.setHours(0, 0, 0, 0);
+    uniqueDays.add(entryDate.getTime());
   }
 
+  // Populate streak array
   for (let i = 0; i < 7; i++) {
     let currentDate = new Date(startOfWeek);
     currentDate.setDate(startOfWeek.getDate() + i);
-    currentDate = currentDate.setHours(0, 0, 0, 0);
+    currentDate.setHours(0, 0, 0, 0);
 
-    if (uniqueDays.has(currentDate)) {
-      streak++;
-    } else {
-      break;
+    if (uniqueDays.has(currentDate.getTime())) {
+      streakArray[i] = true;
     }
   }
 
-  console.log(`🔥 Final Streak: ${streak} days`);
-  return streak;
+  console.log("🔥 Streak Array:", streakArray);
+  return streakArray;
 };
 
 exports.getJournalStreak = async (req, res) => {
   try {
     const { userId } = req.params;
-    const streak = await calculateJournalStreak(userId);
-    console.log(streak);
+    const streakArray = await calculateJournalStreak(userId);
+    
     res.status(200).json({
       message: "Successfully fetched journal streak",
       success: true,
-      streak,
+      streakArray,
     });
   } catch (err) {
     console.error("Error fetching journal streak:", err);
@@ -182,6 +179,7 @@ exports.getJournalStreak = async (req, res) => {
     });
   }
 };
+
 
 // Get journal entries per month
 exports.getJournalEntriesPerMonth = async (req, res) => {

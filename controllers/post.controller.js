@@ -10,6 +10,54 @@ const User = require("../models/user.model");
 const Admin = require("../configs/Firebase.config.js");
 const Comment = require("../models/Comment.Model");
 
+// Get all posts
+exports.getAllPosts = async (req, res) => {
+  try {
+    // Get all posts where isArchieved is false
+    const posts = await Post.find({ isArchieved: false })
+      .populate({
+        path: "user",
+        select: "name profile",
+      })
+      .populate("communityId", "name _id")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Get post IDs
+    const postIds = posts.map((post) => post._id);
+
+    // Get comment count for each post
+    const commentCounts = await Comment.aggregate([
+      { $match: { post: { $in: postIds } } }, // Match comments related to these posts
+      { $group: { _id: "$post", count: { $sum: 1 } } }, // Count comments per post
+    ]);
+
+    // Convert comment count array into a map
+    const commentCountMap = {};
+    commentCounts.forEach(({ _id, count }) => {
+      commentCountMap[_id.toString()] = count;
+    });
+
+    // Attach comment count and ensure user profile contains only the URL
+    const postsWithCommentCount = posts.map((post) => ({
+      ...post,
+      commentCount: commentCountMap[post._id.toString()] || 0,
+      user: post.user
+        ? {
+            _id: post.user._id,
+            name: post.user.name,
+            profileUrl: post.user.profile?.url || null, // Extract profile URL
+          }
+        : null, // If no user, set to null
+    }));
+
+    res.status(200).json({ success: true, posts: postsWithCommentCount });
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+    res.status(500).json({ message: error.message, success: false });
+  }
+};
+
 // Get all post based on USER ID
 exports.getPostBasedOnUserID = async (req, res) => {
   const { userId } = req.params;

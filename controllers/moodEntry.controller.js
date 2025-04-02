@@ -474,6 +474,8 @@ exports.getMoodPerMonthForAllUsers = async (req, res) => {
       });
     }
 
+    console.log(moodEntries);
+
     res.status(200).json({
       data: moodEntries,
       message: "Sucessfully fetch data",
@@ -485,96 +487,63 @@ exports.getMoodPerMonthForAllUsers = async (req, res) => {
   }
 };
 
-const calculateMoodStreak = async (userId) => {
+const calculateMoodWeekStatus = async (userId) => {
   const moodEntries = await MoodEntry.find({ user: userId })
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1 }) // Sort by newest first
     .select("createdAt");
 
-  if (moodEntries.length === 0) return 0;
-
-  let streak = 1;
-  let uniqueDays = new Set();
+  if (moodEntries.length === 0)
+    return [false, false, false, false, false, false, false];
 
   let today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time to midnight
+  today.setHours(0, 0, 0, 0); // Reset to midnight
 
-  // 🎯 Ensure the week starts on **Sunday**
+  // 🎯 Start of this week (Sunday)
   let startOfWeek = new Date(today);
-  let dayOffset = today.getDay(); // Get current day (0 = Sunday, 6 = Saturday)
-  startOfWeek.setDate(today.getDate() - dayOffset); // Move back to Sunday
-  startOfWeek.setHours(0, 0, 0, 0); // Reset time
+  let dayOffset = today.getDay();
+  startOfWeek.setDate(today.getDate() - dayOffset);
+  startOfWeek.setHours(0, 0, 0, 0);
 
   console.log(
     `📅 This week's range: ${startOfWeek.toDateString()} - ${today.toDateString()}`
   );
 
-  let prevDate = new Date(moodEntries[0].createdAt);
-  prevDate.setHours(0, 0, 0, 0); // Normalize to midnight
+  // ✅ Array to store which days have mood entries (Sunday = index 0, Saturday = index 6)
+  let weekStatus = [false, false, false, false, false, false, false];
 
-  // 🚨 Ignore future entries
-  if (prevDate > today) {
-    console.log(`⛔ Most recent entry is in the future. Ignoring.`);
-    return 0;
-  }
-
-  // 🚨 Ignore entries before this week
-  if (prevDate < startOfWeek) {
-    console.log(`⛔ No entries this week. Streak reset.`);
-    return 0;
-  }
-
-  uniqueDays.add(prevDate.getTime());
-
-  console.log(`User ${userId} Mood Entries:`);
-
-  for (let i = 1; i < moodEntries.length; i++) {
-    let currentDate = new Date(moodEntries[i].createdAt);
-    currentDate.setHours(0, 0, 0, 0);
+  for (let entry of moodEntries) {
+    let entryDate = new Date(entry.createdAt);
+    entryDate.setHours(0, 0, 0, 0); // Normalize to midnight
 
     // 🚨 Ignore future entries
-    if (currentDate > today) continue;
+    if (entryDate > today) continue;
 
-    // 🚨 Ignore entries from past weeks
-    if (currentDate < startOfWeek) break;
+    // 🚨 Ignore entries before this week
+    if (entryDate < startOfWeek) break;
 
-    // ✅ Ignore duplicate entries on the same day
-    if (uniqueDays.has(currentDate.getTime())) continue;
-
-    uniqueDays.add(currentDate.getTime());
-
-    console.log(`Entry ${i}: ${currentDate.toDateString()}`);
-
-    // 🔥 Check if it's a consecutive day
-    if (prevDate.getTime() - currentDate.getTime() === 86400000) {
-      streak++;
-      console.log(`✅ Streak continues: ${streak} days`);
-    } else {
-      console.log(`⛔ Streak broken at ${currentDate.toDateString()}`);
-      break;
-    }
-
-    prevDate = currentDate;
+    // 🔥 Determine the day index (Sunday = 0, ..., Saturday = 6)
+    let dayIndex = (entryDate.getDay() - startOfWeek.getDay() + 7) % 7;
+    weekStatus[dayIndex] = true;
   }
 
-  console.log(`🔥 Final Streak This Week: ${streak} days\n`);
-  return streak;
+  console.log(`📊 Mood Log for This Week:`, weekStatus);
+  return weekStatus;
 };
 
-exports.getMoodStreak = async (req, res) => {
+exports.getMoodWeekStatus = async (req, res) => {
   try {
     const { userId } = req.params;
-    const streak = await calculateMoodStreak(userId);
+    const weekStatus = await calculateMoodWeekStatus(userId);
 
-    console.log("Streak:", streak);
     res.status(200).json({
-      message: "Successfully fetched mood streak",
+      message: "Successfully fetched mood week status",
       success: true,
-      streak,
+      weekStatus, // Array of booleans [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
     });
   } catch (err) {
-    console.error("Error fetching mood streak:", err);
+    console.error("Error fetching mood week status:", err);
     res.status(500).json({
-      message: "Error fetching mood streak",
+      message: "Error fetching mood week status",
       success: false,
     });
   }
